@@ -1,29 +1,28 @@
-import type { Context, Route, Middleware } from "./types";
-import { App } from "./types";
+import type { App, Route, Next, Context, Handler } from "./types";
 
-export function parsePath(path: string): { pattern: RegExp; keys: string[] } {
+function parsePath(path: string): { pattern: RegExp; keys: string[] } {
     const keys: string[] = [];
-    const patternStr = path.replace(/:([^\/]+)/g, (_, key) => {
+
+    const pattern = path.replace(/:([^\/]+)/g, (_, key) => {
         keys.push(key);
         return "([^/]+)";
     });
 
     return {
-        pattern: new RegExp("^" + patternStr + "$"),
+        pattern: new RegExp("^" + pattern + "$"),
         keys
     };
 }
 
-export function matchRoute(app: App, ctx: Context): Route | undefined {
+function matchRoute(app: App, ctx: Context): Route | undefined {
     for (const route of app.routes) {
         const match = route.path.includes(":")
             ? route.pattern.exec(ctx.path)
             : ctx.path === route.path
-            ? [""] // dummy to match
+            ? [""]
             : null;
 
         if (match && ctx.method.toUpperCase() === route.method) {
-            // dynamic params
             ctx.params = {};
             if (route.keys && match.length > 1) {
                 route.keys.forEach((key, i) => {
@@ -39,14 +38,30 @@ export function matchRoute(app: App, ctx: Context): Route | undefined {
         if (found) return found;
     }
 }
+export function addRoute(
+    method: string,
+    path: string,
+    handler: Handler,
+    app: App
+) {
+    const fullPath = app.prefix + path;
+    const { pattern, keys } = parsePath(fullPath);
 
-export async function routerMiddleware(ctx, next) {
+    app.routes.push({
+        method: method.toUpperCase(),
+        path: fullPath,
+        handler,
+        scope: app,
+        keys,
+        pattern
+    });
+}
+
+export async function routerMiddleware(ctx: Context, next: Next) {
     const route = matchRoute(ctx.app, ctx);
 
     if (!route) return next();
 
-    ctx.params = route.params;
-    ctx._matchedRoute = route;
-
     await route.handler(ctx);
 }
+

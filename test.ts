@@ -7,7 +7,7 @@ const app = new App();
 
 app.use(logger);
 app.use(timing);
-app.use(serveStatic("public")); //
+app.use(serveStatic("public")); // this will autocraticly serve any static file from your diclared folder like  http:/..:300/image.png searves public/image.png
 
 // Global middleware
 app.use(async (ctx, next) => {
@@ -18,6 +18,8 @@ app.use(async (ctx, next) => {
 // Root route
 app.get("/", ctx => (ctx.body = "Home"));
 
+
+// render html 
 app.get("/html", ctx => {
     ctx.type = "html";
     ctx.body = `
@@ -29,7 +31,7 @@ app.get("/html", ctx => {
   `;
 });
 
-// se
+// manualy serve static file
 app.get("/file", ctx => {
     ctx.type = "png";
     ctx.body = fs.createReadStream("./public/image.png");

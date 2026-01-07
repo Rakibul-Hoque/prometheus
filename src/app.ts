@@ -15,7 +15,7 @@ import { respond } from "./respond";
 import { errorBoundary } from "./middleware/error-boundary";
 import { notFound } from "./middleware/not-found";
 
-import { parsePath,  routerMiddleware} from "./router";
+import { addRoute, routerMiddleware } from "./router";
 
 export class App {
     parent: App | null;
@@ -29,8 +29,17 @@ export class App {
         this.prefix = prefix;
     }
 
-    use(fn: Middleware) {
-        this.middlewares.push({ fn, scope: this });
+    use(fn: Middleware | Middleware[]) {
+        
+        if (fn instanceof Array) {
+            if (Array.isArray(fn)) {
+                for (const middleware of fn) {
+                    this.middlewares.push({ fn: middleware, scope: this });
+                }
+            }
+        } else {
+            this.middlewares.push({ fn, scope: this });
+        }
     }
 
     register(plugin: Plugin, prefix = ""): void {
@@ -39,31 +48,17 @@ export class App {
         plugin(child);
     }
 
-    addRoute(method: string, path: string, handler: Handler) {
-        const fullPath = this.prefix + path;
-        const { pattern, keys } = parsePath(fullPath);
-
-        this.routes.push({
-            method: method.toUpperCase(),
-            path: fullPath,
-            handler,
-            scope: this,
-            keys,
-            pattern
-        });
-    }
-
     get(path: string, handler: Handler) {
-        this.addRoute("GET", path, handler);
+        addRoute("GET", path, handler, this);
     }
     post(path: string, handler: Handler) {
-        this.addRoute("POST", path, handler);
+        addRoute("POST", path, handler, this);
     }
     put(path: string, handler: Handler) {
-        this.addRoute("PUT", path, handler);
+        addRoute("PUT", path, handler, this);
     }
     delete(path: string, handler: Handler) {
-        this.addRoute("DELETE", path, handler);
+        addRoute("DELETE", path, handler, this);
     }
 
     flattenMiddlewares(): Middleware[] {
@@ -100,3 +95,6 @@ export class App {
         server.listen(port);
     }
 }
+
+
+
