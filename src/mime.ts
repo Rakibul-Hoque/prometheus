@@ -28,12 +28,3 @@ export function getMimeType(input: string): string | undefined {
     return MIME_MAP[ext.toLowerCase()];
 }
 
-export interface AppOptions {
-    errorBoundary?: boolean;
-    notFound?: boolean;
-}
-
-export const defaultOptions: Required<AppOptions> = {
-    errorBoundary: true,
-    notFound: true
-};

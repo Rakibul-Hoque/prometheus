@@ -4,7 +4,7 @@ import { logger, timing } from "./src/middleware";
 
 const app = new App();
 
-app.use([logger, timing]);
+// app.use([logger, timing]);
 
 app.use(async (ctx, next) => {
     console.log("Global middleware");
@@ -34,6 +34,8 @@ app.register(users => {
 
     users.get("/:id", ctx => {
         console.log("Users route");
+        console.log(`your id is : ${ctx.params?.id}`);
+        
         ctx.body = `your id is : ${ctx.params?.id}`;
     });
     users.use(async (ctx, next) => {
@@ -49,5 +51,3 @@ app.use(async (ctx, next) => {
 
 app.listen(3000);
 console.log("Server running at http://localhost:3000");
-
-

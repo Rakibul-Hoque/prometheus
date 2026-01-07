@@ -1,13 +1,14 @@
 import App from "./src";
-import { logger } from "./src/middleware";
 
-const app = new App();
+const app = new App({
+    logger: true
+});
+
+
 
 /* ──────────────────────────────
    GLOBAL MIDDLEWARE
 ────────────────────────────── */
-
-app.use(logger);
 
 app.use(async (ctx, next) => {
     console.log("🌍 Global middleware start");
@@ -80,7 +81,7 @@ app.register(user => {
         console.log("💥 Error route");
         ctx.throw(400, "User error");
     });
-    
+
     user.register(admin => {
         admin.use(async (ctx, next) => {
             console.log("admin plugin middleware start");

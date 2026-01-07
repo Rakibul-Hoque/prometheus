@@ -20,33 +20,6 @@ export function compose(middleware: Middleware[]) {
     };
 }
 
-export async function dispatch2(app: App, ctx: Context) {
-    let index = -1;
-
-    async function runMiddlewares(middlewares: LayerMiddleware[]) {
-        index++;
-        if (index >= middlewares.length) return;
-
-        const mw = middlewares[index];
-
-        if (!ctx.path.startsWith(mw.prefix)) {
-            return runMiddlewares(middlewares);
-        }
-
-        await mw.fn(ctx, async () => runMiddlewares(middlewares));
-
-        if (ctx.body) return; // ✅ stop once responded
-    }
-
-    await runMiddlewares(app.middlewares);
-
-    for (const child of app.children) {
-        if (ctx.path.startsWith(child.prefix)) {
-            await dispatch(child, ctx);
-            if (ctx.body) return; // ✅ stop once responded
-        }
-    }
-}
 export async function dispatch(app: App, ctx: Context) {
     let index = -1;
 
@@ -71,3 +44,4 @@ export async function dispatch(app: App, ctx: Context) {
         }
     }
 }
+

@@ -9,24 +9,33 @@ import type {
 } from "./types";
 import { App as AppType } from "./types";
 import { createContext } from "./context";
-import { dispatch } from "./compose";
-
-import { respond } from "./respond";
-import { errorBoundary } from "./middleware/error-boundary";
-import { notFound } from "./middleware/not-found";
+import { dispatch, compose } from "./compose";
 
 import { addRoute } from "./router";
+import { respond } from "./respond";
+
+import type { AppOptions } from "./config";
+import { defaultOptions, installSystem } from "./config";
 
 export class App {
     parent: App | null;
     children: App[] = [];
     middlewares: LayerMiddleware[] = [];
-    routes: Route[] = [];
-    prefix: string = "";
 
-    constructor(parent: App | null = null, prefix = "") {
+    systemPre: Middleware[] = [];
+    systemPost: Middleware[] = [];
+    prefix: string = "";
+    options: Required<AppOptions>;
+    constructor(
+        options: AppOptions = {},
+        parent: App | null = null,
+        prefix = ""
+    ) {
         this.parent = parent;
         this.prefix = prefix;
+        this.options = { ...defaultOptions, ...options };
+
+        installSystem(this);
     }
 
     use(fn: Middleware | Middleware[], prefix: string = "") {
@@ -40,7 +49,7 @@ export class App {
     }
 
     register(plugin: Plugin, prefix: string = "") {
-        const child = new App(this, this.prefix + prefix);
+        const child = new App(this.options, this, this.prefix + prefix);
         this.children.push(child);
         plugin(child);
     }
@@ -63,13 +72,16 @@ export class App {
             const ctx = await createContext(req, res);
             ctx.app = this;
 
-            await dispatch(this, ctx);
+            const fn = compose([
+                ...this.systemPre,
+                async (ctx, next) => {
+                    await dispatch(this, ctx);
+                    await next();
+                },
+                ...this.systemPost
+            ]);
 
-            if (ctx.body === undefined) {
-                ctx.status = 404;
-                ctx.body = { error: "Not Found" };
-            }
-
+            await fn(ctx);
             respond(ctx);
         });
 
