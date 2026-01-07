@@ -5,7 +5,7 @@ const MIME_MAP: Record<string, string> = {
     js: "application/javascript; charset=utf-8",
     json: "application/json; charset=utf-8",
     txt: "text/plain; charset=utf-8",
-    text : "text/plain; charset=utf-8",
+    text: "text/plain; charset=utf-8",
 
     png: "image/png",
     jpg: "image/jpeg",
@@ -27,3 +27,13 @@ export function getMimeType(input: string): string | undefined {
     if (!ext) return undefined;
     return MIME_MAP[ext.toLowerCase()];
 }
+
+export interface AppOptions {
+    errorBoundary?: boolean;
+    notFound?: boolean;
+}
+
+export const defaultOptions: Required<AppOptions> = {
+    errorBoundary: true,
+    notFound: true
+};

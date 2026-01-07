@@ -1,7 +1,7 @@
 import http from "http";
 import type {
     Middleware,
-    ScopedMiddleware,
+    LayerMiddleware,
     Plugin,
     Handler,
     Route,
@@ -9,18 +9,18 @@ import type {
 } from "./types";
 import { App as AppType } from "./types";
 import { createContext } from "./context";
-import { compose } from "./compose";
+import { dispatch } from "./compose";
 
 import { respond } from "./respond";
 import { errorBoundary } from "./middleware/error-boundary";
 import { notFound } from "./middleware/not-found";
 
-import { addRoute, routerMiddleware } from "./router";
+import { addRoute } from "./router";
 
 export class App {
     parent: App | null;
     children: App[] = [];
-    middlewares: ScopedMiddleware[] = [];
+    middlewares: LayerMiddleware[] = [];
     routes: Route[] = [];
     prefix: string = "";
 
@@ -29,21 +29,18 @@ export class App {
         this.prefix = prefix;
     }
 
-    use(fn: Middleware | Middleware[]) {
-        
-        if (fn instanceof Array) {
-            if (Array.isArray(fn)) {
-                for (const middleware of fn) {
-                    this.middlewares.push({ fn: middleware, scope: this });
-                }
-            }
-        } else {
-            this.middlewares.push({ fn, scope: this });
+    use(fn: Middleware | Middleware[], prefix: string = "") {
+        const list = Array.isArray(fn) ? fn : [fn];
+        for (const middleware of list) {
+            this.middlewares.push({
+                fn: middleware,
+                prefix: this.prefix + prefix
+            });
         }
     }
 
-    register(plugin: Plugin, prefix = ""): void {
-        const child = new App(this, prefix);
+    register(plugin: Plugin, prefix: string = "") {
+        const child = new App(this, this.prefix + prefix);
         this.children.push(child);
         plugin(child);
     }
@@ -61,40 +58,21 @@ export class App {
         addRoute("DELETE", path, handler, this);
     }
 
-    flattenMiddlewares(): Middleware[] {
-        const result: Middleware[] = [];
-
-        function walk(app: App) {
-            result.push(...app.middlewares.map(m => m.fn));
-            for (const child of app.children) walk(child);
-        }
-        walk(this);
-        return result;
-    }
-
-    buildMiddlewareChain(): Middleware[] {
-        return [
-            errorBoundary,
-            ...this.flattenMiddlewares(),
-            routerMiddleware,
-            notFound
-        ];
-    }
-
     listen(port: number) {
-        const middleware = compose(this.buildMiddlewareChain());
-
         const server = http.createServer(async (req, res) => {
             const ctx = await createContext(req, res);
             ctx.app = this;
 
-            await middleware(ctx);
+            await dispatch(this, ctx);
+
+            if (ctx.body === undefined) {
+                ctx.status = 404;
+                ctx.body = { error: "Not Found" };
+            }
+
             respond(ctx);
         });
 
         server.listen(port);
     }
 }
-
-
-

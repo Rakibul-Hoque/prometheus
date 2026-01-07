@@ -5,23 +5,14 @@ export type Next = () => Promise<void>;
 
 export type Middleware = (ctx: Context, next: Next) => Promise<void>;
 
-type ScopedMiddleware = {
+export type LayerMiddleware = {
     fn: Middleware;
-    scope: App;
+    prefix: string;
 };
 
 export type Handler = (ctx: Context) => Promise<void>;
 
 export type Plugin = (app: App) => void;
-
-export interface Route {
-    method: string;
-    path: string;
-    handler: Handler;
-    scope: App;
-    keys?: string[];
-    pattern: string;
-}
 
 export interface Request {
     body: any;

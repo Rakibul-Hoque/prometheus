@@ -43,9 +43,9 @@ export async function createContext(
             body: await parseRequestBody(req)
         },
 
-        status: 200,
         body: undefined,
         responded: false,
+        status: 200,
 
         get type() {
             return this.res.getHeader("Content-Type") as string;
@@ -72,3 +72,5 @@ export async function createContext(
         }
     };
 }
+
+
