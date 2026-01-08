@@ -1,14 +1,12 @@
 import type { Context } from "./types";
 import { Stream } from "stream";
 
-export function respond(ctx: Context) {
+export async function respond(ctx: Context) {
     if (ctx.responded) return;
     ctx.responded = true;
 
     const res = ctx.res;
     const body = ctx.body;
-
-    res.statusCode = ctx.status || 200;
 
     if (body === undefined || body === null) {
         res.end();

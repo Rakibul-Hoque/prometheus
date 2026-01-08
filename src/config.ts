@@ -18,12 +18,12 @@ export const defaultOptions: Required<AppOptions> = {
 };
 
 export function installSystem(app: App) {
-    if (app.options.errorBoundary) {
-        app.systemPre.push(errorBoundary);
-    }
-
+    
     if (app.options.logger) {
         app.systemPre.push(logger);
+    }
+if (app.options.errorBoundary) {
+        app.systemPre.push(errorBoundary);
     }
 
     if (app.options.timing) {

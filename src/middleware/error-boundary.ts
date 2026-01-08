@@ -5,9 +5,20 @@ export async function errorBoundary(ctx: Context, next: Next) {
     try {
         await next();
     } catch (err: any) {
-        ctx.status = err.status || 500;
-        ctx.body = {
-            error: err.message || "Internal Server Error"
-        };
+        const app = ctx.app;
+
+        try {
+            await app._onError(ctx, err);
+        } catch (handlerErr) {
+            console.error("Error in onError handler:", handlerErr);
+            ctx.body = {
+                error: "Internal Server Error",
+                status: 500
+            };
+        }
+
+        if (!ctx.type) {
+            ctx.type = "json";
+        }
     }
 }

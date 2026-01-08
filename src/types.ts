@@ -5,6 +5,10 @@ export type Next = () => Promise<void>;
 
 export type Middleware = (ctx: Context, next: Next) => Promise<void>;
 
+export type ErrorHandler = (ctx: Context, error: Error) => void | Promise<void>;
+
+export type NotFoundHandler = (ctx: Context) => void | Promise<void>;
+
 export type LayerMiddleware = {
     fn: Middleware;
     prefix: string;
@@ -28,14 +32,15 @@ export interface Context {
     query: URLSearchParams;
     params: Record<string, string>;
 
-    request: Request; // ✅ incoming data
-    status: number; // ✅ response status
-    body: any; // ✅ response body
+    request: Request; 
+    status: number; 
+    body: any; 
     responded: boolean;
     type?: string;
     redirect(url: string, status?: number): void;
     set(name: string, value: string): void;
     throw(status: number, message?: string): never;
+    assert(condition: any, message: string, status: number): never;
 }
 
 export class App {}

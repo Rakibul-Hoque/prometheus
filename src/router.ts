@@ -1,4 +1,4 @@
-import type { App, Route, Next, Context, Handler } from "./types";
+import type { App, Handler } from "./types";
 
 function getStaticPrefix(path: string) {
     const idx = path.indexOf(":");
@@ -32,6 +32,9 @@ export function addRoute(
     const prefix = relativePrefix(app, fullPath);
 
     app.use(async (ctx, next) => {
+
+        if (ctx.body !== undefined) return next();
+
         if (ctx.method !== method.toUpperCase()) return next();
 
         const match = pattern.exec(ctx.path);
@@ -44,6 +47,6 @@ export function addRoute(
 
         await handler(ctx);
 
-        
+
     }, prefix);
 }

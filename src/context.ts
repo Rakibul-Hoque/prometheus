@@ -1,34 +1,14 @@
 import { IncomingMessage, ServerResponse } from "http";
 import type { Context, Request } from "./types";
 import { getMimeType } from "./mime";
-
-async function parseRequestBody(req: IncomingMessage): Promise<any> {
-    if (req.method === "GET" || req.method === "HEAD") return null;
-
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) chunks.push(chunk);
-    if (!chunks.length) return null;
-
-    const raw = Buffer.concat(chunks).toString();
-    const type = req.headers["content-type"] || "";
-
-    if (type.includes("application/json")) {
-        return JSON.parse(raw);
-    }
-
-    if (type.includes("application/x-www-form-urlencoded")) {
-        return Object.fromEntries(new URLSearchParams(raw));
-    }
-
-    return raw;
-}
+import { searchParamsToObject, parseRequestBody } from "./utils";
 
 export async function createContext(
     req: IncomingMessage,
     res: ServerResponse
 ): Promise<Context> {
     const url = new URL(req.url || "/", `http://${req.headers.host}`);
-
+    res.statusCode = 200;
     return {
         req,
         res,
@@ -36,7 +16,7 @@ export async function createContext(
         method: req.method || "GET",
         path: url.pathname,
         headers: req.headers,
-        query: url.searchParams,
+        query: searchParamsToObject(url.searchParams),
         params: {},
 
         request: {
@@ -45,7 +25,12 @@ export async function createContext(
 
         body: undefined,
         responded: false,
-        status: 200,
+        get status() {
+            return this.res.statusCode;
+        },
+        set status(value: number) {
+            this.res.statusCode = value;
+        },
 
         get type() {
             return this.res.getHeader("Content-Type") as string;
@@ -66,11 +51,17 @@ export async function createContext(
         },
 
         throw(status, message) {
-            const err: any = new Error(message || "Error");
+            const err: any = new Error(
+                message || http.STATUS_CODES[status] || "Error"
+            );
             err.status = status;
+            err.expose = status < 500;
             throw err;
+        },
+        assert(condition, message, status = 400) {
+            if (!condition) {
+                this.throw(status, message);
+            }
         }
     };
 }
-
-

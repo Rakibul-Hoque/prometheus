@@ -1,4 +1,4 @@
-import type { Middleware, Context, LayerMiddleware } from "./types";
+import type { Middleware, Context, LayerMiddleware, App } from "./types";
 
 export function compose(middleware: Middleware[]) {
     return async function (ctx: Context): Promise<void> {
@@ -20,28 +20,35 @@ export function compose(middleware: Middleware[]) {
     };
 }
 
-export async function dispatch(app: App, ctx: Context) {
-    let index = -1;
 
-    async function runMiddlewares(mws: LayerMiddleware[]) {
-        index++;
-        if (index >= mws.length) return;
 
-        const mw = mws[index];
-        if (!ctx.path.startsWith(mw.prefix)) {
-            return runMiddlewares(mws);
+export async function dispatch(app: App, ctx: Context): Promise<void> {
+    const chain: Middleware[] = [];
+
+    for (const entry of app.stack) {
+        if (ctx.body !== undefined) break;
+
+        if (entry.type === "middleware") {
+            const mw = entry.item as LayerMiddleware;
+            if (ctx.path.startsWith(mw.prefix)) {
+                chain.push(mw.fn);
+            }
+        } else if (entry.type === "child") {
+            const child = entry.item as App;
+            if (ctx.path.startsWith(child.prefix)) {
+                chain.push(async (ctx, next) => {
+                    await dispatch(child, ctx);
+
+                    if (ctx.body === undefined) await next();
+                });
+
+                if (ctx.body !== undefined) break;
+            }
         }
-
-        await mw.fn(ctx, async () => runMiddlewares(mws));
     }
 
-    await runMiddlewares(app.middlewares);
-
-    for (const child of app.children) {
-        if (ctx.path.startsWith(child.prefix)) {
-            await dispatch(child, ctx);
-            if (ctx.body !== undefined) return;
-        }
+    if (chain.length > 0) {
+        const fn = compose(chain);
+        await fn(ctx);
     }
 }
-
