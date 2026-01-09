@@ -30,9 +30,8 @@ export function addRoute(
     const { pattern, keys } = parsePath(fullPath);
 
     const prefix = relativePrefix(app, fullPath);
-
     app.use(async (ctx, next) => {
-
+        
         if (ctx.body !== undefined) return next();
 
         if (ctx.method !== method.toUpperCase()) return next();
@@ -40,13 +39,11 @@ export function addRoute(
         const match = pattern.exec(ctx.path);
         if (!match) return next();
 
+        
         ctx.params = {};
         keys.forEach((k, i) => {
             ctx.params![k] = match[i + 1];
         });
-
         await handler(ctx);
-
-
     }, prefix);
 }

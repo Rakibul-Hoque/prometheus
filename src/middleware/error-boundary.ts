@@ -5,10 +5,8 @@ export async function errorBoundary(ctx: Context, next: Next) {
     try {
         await next();
     } catch (err: any) {
-        const app = ctx.app;
-
         try {
-            await app._onError(ctx, err);
+            await ctx.app.emit("error", ctx, err);
         } catch (handlerErr) {
             console.error("Error in onError handler:", handlerErr);
             ctx.body = {
@@ -16,7 +14,6 @@ export async function errorBoundary(ctx: Context, next: Next) {
                 status: 500
             };
         }
-
         if (!ctx.type) {
             ctx.type = "json";
         }

@@ -2,6 +2,7 @@ import { App } from "./types";
 import { logger, timing } from "./middleware";
 import { errorBoundary } from "./middleware/error-boundary";
 import { notFound } from "./middleware/not-found";
+import { defaultOnErrorHandler, defaultOnNotFoundHandler } from "./errors";
 
 export interface AppOptions {
     errorBoundary?: boolean;
@@ -18,11 +19,10 @@ export const defaultOptions: Required<AppOptions> = {
 };
 
 export function installSystem(app: App) {
-    
     if (app.options.logger) {
         app.systemPre.push(logger);
     }
-if (app.options.errorBoundary) {
+    if (app.options.errorBoundary) {
         app.systemPre.push(errorBoundary);
     }
 
@@ -33,4 +33,7 @@ if (app.options.errorBoundary) {
     if (app.options.notFound) {
         app.systemPost.push(notFound);
     }
+
+    app.on("error", defaultOnErrorHandler);
+    app.on("notFound", defaultOnNotFoundHandler);
 }

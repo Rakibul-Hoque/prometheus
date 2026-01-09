@@ -1,10 +1,9 @@
 import fs from "fs";
 import path from "path";
 import { getMimeType } from "../mime";
-
 import type { Context, Next } from "../types";
 
-export function serveStatic(root: string ) {
+export function serveStatic(root: string) {
     return async (ctx: Context, next: Next) => {
         const filePath = path.join(root, ctx.path);
 

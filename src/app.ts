@@ -8,15 +8,16 @@ import type {
     ErrorHandler,
     NotFoundHandler
 } from "./types";
-import { createContext } from "./context";
+import { createContext } from "./context/createContext";
 import { dispatch, compose } from "./compose";
 import { addRoute } from "./router";
 import { respond } from "./respond";
 import type { AppOptions } from "./config";
+import { EventEmitter } from "./events";
 import { defaultOptions, installSystem } from "./config";
 import { defaultOnErrorHandler, defaultOnNotFoundHandler } from "./errors";
 
-export class App {
+export class App extends EventEmitter {
     parent: App | null;
 
     stack: Array<{
@@ -28,13 +29,13 @@ export class App {
     systemPost: Middleware[] = [];
     prefix: string = "";
     options: Required<AppOptions>;
-    _onError?: ErrorHandler = defaultOnErrorHandler;
-    _onNotFound?: NotFoundHandler = defaultOnNotFoundHandler;
+
     constructor(
         options: AppOptions = {},
         parent: App | null = null,
         prefix = ""
     ) {
+        super();
         this.parent = parent;
         this.prefix = prefix;
         this.options = { ...defaultOptions, ...options };
@@ -78,31 +79,21 @@ export class App {
         return this;
     }
 
-    onError(handler: ErrorHandler) {
-        this._onError = handler;
-        return this;
-    }
-
-    onNotFound(handler: NotFoundHandler) {
-        this._onNotFound = handler;
-        return this;
-    }
-
     listen(port: number) {
         const server = http.createServer(async (req, res) => {
-            const ctx = await createContext(req, res);
-            ctx.app = this;
+            const ctx = await createContext(req, res, this);
+
             try {
                 const fn = compose([
                     ...this.systemPre,
-                       async (ctx, next) => {
+                    async (ctx, next) => {
                         await dispatch(this, ctx);
                         if (ctx.body === undefined) {
                             await next();
                         }
                     },
                     ...this.systemPost
-                ]); 
+                ]);
                 await fn(ctx);
             } finally {
                 await respond(ctx);
