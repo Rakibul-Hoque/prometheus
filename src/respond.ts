@@ -13,6 +13,11 @@ export async function respond(ctx: Context) {
         return;
     }
 
+    if (body._redirect || (ctx.status >= 300 && ctx.status < 400)) {
+        res.end()
+        return;
+    }
+
     if (body instanceof Stream) {
         body.pipe(res);
         return;

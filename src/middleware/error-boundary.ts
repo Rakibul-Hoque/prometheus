@@ -6,7 +6,7 @@ export async function errorBoundary(ctx: Context, next: Next) {
         await next();
     } catch (err: any) {
         try {
-            await ctx.app.emit("error", ctx, err);
+            await ctx.currentApp.emit("error", ctx, err);
         } catch (handlerErr) {
             console.error("Error in onError handler:", handlerErr);
             ctx.body = {

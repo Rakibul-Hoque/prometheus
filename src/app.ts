@@ -8,28 +8,35 @@ import type {
     ErrorHandler,
     NotFoundHandler
 } from "./types";
+import { App as BaseApp } from "./types";
 import { createContext } from "./context/createContext";
 import { dispatch, compose } from "./compose";
-import { addRoute } from "./router";
+
 import { respond } from "./respond";
 import type { AppOptions } from "./config";
-import { EventEmitter } from "./events";
 import { defaultOptions, installSystem } from "./config";
-import { defaultOnErrorHandler, defaultOnNotFoundHandler } from "./errors";
+import { RadixRouter } from "./radix_router";
 
-export class App extends EventEmitter {
+export class App extends BaseApp {
     parent: App | null;
-
-    stack: Array<{
-        type: "middleware" | "child";
-        item: LayerMiddleware | App;
-    }> = [];
+    stack: Array<
+        | { type: "middleware"; item: LayerMiddleware }
+        | { type: "child"; item: App }
+        | {
+              type: "route";
+              item: {
+                  method: string;
+                  path: string;
+                  handler: Handler;
+              };
+          }
+    > = [];
 
     systemPre: Middleware[] = [];
     systemPost: Middleware[] = [];
     prefix: string = "";
     options: Required<AppOptions>;
-
+    _router: RadixRouter;
     constructor(
         options: AppOptions = {},
         parent: App | null = null,
@@ -39,7 +46,7 @@ export class App extends EventEmitter {
         this.parent = parent;
         this.prefix = prefix;
         this.options = { ...defaultOptions, ...options };
-
+        this._router = new RadixRouter();
         installSystem(this);
     }
 
@@ -63,20 +70,31 @@ export class App extends EventEmitter {
     }
 
     get(path: string, handler: Handler) {
-        addRoute("GET", path, handler, this);
+        this.add("GET", path, handler);
         return this;
     }
+
     post(path: string, handler: Handler) {
-        addRoute("POST", path, handler, this);
+        this.add("POST", path, handler);
         return this;
     }
+
     put(path: string, handler: Handler) {
-        addRoute("PUT", path, handler, this);
+        this.add("PUT", path, handler);
         return this;
     }
+
     delete(path: string, handler: Handler) {
-        addRoute("DELETE", path, handler, this);
+        this.add("DELETE", path, handler);
         return this;
+    }
+    add(method, path, handler) {
+        const fullPath = this.prefix + path;
+        this._router.add(method, fullPath, handler);
+        this.stack.push({
+            type: "route" as const,
+            item: { method, path: fullPath, handler}
+        });
     }
 
     listen(port: number) {

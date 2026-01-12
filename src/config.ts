@@ -1,15 +1,9 @@
 import { App } from "./types";
+import type { AppOptions } from "./types";
 import { logger, timing } from "./middleware";
 import { errorBoundary } from "./middleware/error-boundary";
 import { notFound } from "./middleware/not-found";
 import { defaultOnErrorHandler, defaultOnNotFoundHandler } from "./errors";
-
-export interface AppOptions {
-    errorBoundary?: boolean;
-    logger?: boolean;
-    timing?: boolean;
-    notFound?: boolean;
-}
 
 export const defaultOptions: Required<AppOptions> = {
     errorBoundary: true,

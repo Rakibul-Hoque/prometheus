@@ -51,7 +51,6 @@ export const contextPrototype: Partial<Context> = {
         this.response.type = value;
     },
 
-    /* helpers */
     get(name: string) {
         return this.request.get(name);
     },
@@ -60,7 +59,10 @@ export const contextPrototype: Partial<Context> = {
         this.response.set(name, value);
     },
 
-    throw(status: number, message?: string): never {
+    get currentApp() {
+        return this.appStack[this.appStack.length - 1];
+    },
+    throw(status: number, message: string): never {
         const err: any = new Error(
             message || http.STATUS_CODES[status] || "Error"
         );
@@ -68,12 +70,14 @@ export const contextPrototype: Partial<Context> = {
         err.expose = status < 500;
         throw err;
     },
-
+    redirect(url: string, status = 302) {
+        this.response.redirect(url, status);
+    },
     assert(condition: any, message: string, status = 400) {
         if (!condition) this.throw(status, message);
     },
 
     emit(event: string, ...args: any[]) {
-        return this.app.emit(event, ...args);
+        return this.currentApp.emit(event, ...args);
     }
 };

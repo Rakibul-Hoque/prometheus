@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from "http";
-import { EventEmitter } from "../events";
+import { App } from "../types";
 
 export interface Request {
     req: IncomingMessage;
@@ -29,7 +29,9 @@ export interface Response {
 }
 
 export interface Context {
-    app: EventEmitter;
+    app: App;
+    appStack: App[];
+    currentApp: App;
 
     req: IncomingMessage;
     res: ServerResponse;

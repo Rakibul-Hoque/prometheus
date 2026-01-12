@@ -9,7 +9,7 @@ export function compose(middleware: Middleware[]) {
                 throw new Error("next() called multiple times");
             }
             index = i;
-
+            if (ctx.body !== undefined) return;
             const fn = middleware[i];
             if (!fn) return;
 
@@ -20,9 +20,7 @@ export function compose(middleware: Middleware[]) {
     };
 }
 
-
-
-export async function dispatch(app: App, ctx: Context): Promise<void> {
+export async function dispatch2(app: App, ctx: Context): Promise<void> {
     const chain: Middleware[] = [];
 
     for (const entry of app.stack) {
@@ -30,25 +28,82 @@ export async function dispatch(app: App, ctx: Context): Promise<void> {
 
         if (entry.type === "middleware") {
             const mw = entry.item as LayerMiddleware;
-            if (ctx.path.startsWith(mw.prefix)) {
-                chain.push(mw.fn);
-            }
+            if (ctx.path.startsWith(mw.prefix)) chain.push(mw.fn);
         } else if (entry.type === "child") {
             const child = entry.item as App;
             if (ctx.path.startsWith(child.prefix)) {
                 chain.push(async (ctx, next) => {
                     await dispatch(child, ctx);
-
                     if (ctx.body === undefined) await next();
                 });
-
-                if (ctx.body !== undefined) break;
             }
-        }
+        } else if (entry.type === "route")
+            chain.push(app._router.getMiddleware());
     }
 
     if (chain.length > 0) {
         const fn = compose(chain);
         await fn(ctx);
+    }
+}
+
+export async function dispatch(app: App, ctx: Context): Promise<void> {
+    const chain: Middleware[] = [];
+    let pendingRoutes: Array<{
+        method: string;
+        path: string;
+        handler: Handler;
+    }> = [];
+
+    const flushRoutes = () => {
+        if (pendingRoutes.length > 0) {
+            const pendingHandlers = new Set(pendingRoutes.map(r => r.handler));
+
+            chain.push(async (ctx, next) => {
+                if (ctx.body !== undefined) return next();
+
+                const result = app._router.find(ctx.method, ctx.path);
+                if (result && pendingHandlers.has(result.handler)) {
+                    ctx.params = result.params;
+                    await result.handler(ctx);
+                } else await next();
+            });
+            pendingRoutes = [];
+        }
+    };
+
+    if (ctx.currentApp !== app) 
+        ctx.appStack.push(app);
+    try {
+        for (const entry of app.stack) {
+            if (ctx.body !== undefined) break;
+
+            if (entry.type === "middleware") {
+                flushRoutes();
+
+                const mw = entry.item as LayerMiddleware;
+                if (ctx.path.startsWith(mw.prefix)) chain.push(mw.fn);
+            } else if (entry.type === "child") {
+                flushRoutes();
+
+                const child = entry.item as App;
+                if (ctx.path.startsWith(child.prefix)) {
+                    chain.push(async (ctx, next) => {
+                        await dispatch(child, ctx);
+                        if (ctx.body === undefined) await next();
+                    });
+                }
+            } else if (entry.type === "route") pendingRoutes.push(entry.item);
+        }
+
+        flushRoutes();
+
+        if (chain.length > 0) {
+            const fn = compose(chain);
+            await fn(ctx);
+        }
+    } finally {
+        if (ctx.currentApp === app && ctx.appStack.length > 1)
+            ctx.appStack.pop();
     }
 }

@@ -3,7 +3,7 @@ import type { Context, Next } from "../types";
 export async function notFound(ctx: Context) {
     if (ctx.body === undefined) {
         try {
-            await ctx.app.emit("notFound", ctx);
+            await ctx.currentApp.emit("notFound", ctx);
         } catch (err) {
             console.error("Error in onNotFound handler:", err);
             ctx.status = 404;

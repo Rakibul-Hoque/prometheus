@@ -36,6 +36,6 @@ export const responsePrototype: Partial<Response> = {
     redirect(url: string, status = 302) {
         this.status = status;
         this.set("Location", url);
-        this.body = null;
+        this.body = { _redirect: true };
     }
 };
