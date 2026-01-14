@@ -13,7 +13,7 @@ export async function notFound(ctx: Context) {
             };
         }
         if (!ctx.type) {
-            ctx.type = "application/json";
+            ctx.type = "json";
         }
     }
 }

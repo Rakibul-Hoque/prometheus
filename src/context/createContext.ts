@@ -17,7 +17,7 @@ export async function createContext(
     const response = Object.create(responsePrototype);
 
     ctx.app = app;
-    ctx.appStack = [app ];
+    ctx.appStack = [];
 
     ctx.req = req;
     ctx.res = res;

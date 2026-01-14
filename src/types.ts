@@ -1,4 +1,4 @@
-// types.ts
+
 export { EventEmitter } from "./events"; 
 export type { Context } from "./context/types"; 
 
@@ -25,6 +25,7 @@ export interface Request {
 
 export interface AppOptions {
     errorBoundary?: boolean;
+    bodyParser?: boolean;
     logger?: boolean;
     timing?: boolean;
     notFound?: boolean;

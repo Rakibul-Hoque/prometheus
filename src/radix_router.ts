@@ -28,7 +28,6 @@ export class RadixRouter {
     }
 
     add(method: string, path: string, handler: Handler) {
-        // Normalize
         if (path[0] !== "/") path = "/" + path;
         if (path.length > 1 && path[path.length - 1] === "/") {
             path = path.slice(0, -1);
@@ -80,25 +79,12 @@ export class RadixRouter {
         node.handlers.set(methodUpper, handler);
         this.clearCache();
     }
-
-    getMiddleware() {
-        return async (ctx, next) => {
-            const result = this.find(ctx.method, ctx.path);
-
-            if (result && result.handler) {
-                ctx.params = result.params;
-                await result.handler(ctx);
-            } else {
-                await next();
-            }
-        };
-    }
+    
 
     find(
         method: string,
         path: string
     ): { handler: Handler; params: Record<string, string> } | null {
-        // Normalize
         if (path[0] !== "/") path = "/" + path;
         if (path.length > 1 && path[path.length - 1] === "/") {
             path = path.slice(0, -1);
@@ -208,3 +194,5 @@ export class RadixRouter {
         );
     }
 }
+
+

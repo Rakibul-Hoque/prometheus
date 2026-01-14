@@ -60,7 +60,7 @@ export const contextPrototype: Partial<Context> = {
     },
 
     get currentApp() {
-        return this.appStack[this.appStack.length - 1];
+        return this.appStack[this.appStack.length - 1] ?? this.app 
     },
     throw(status: number, message: string): never {
         const err: any = new Error(

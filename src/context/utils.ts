@@ -1,5 +1,3 @@
-
-
 export async function parseRequestBody(req: IncomingMessage): Promise<any> {
     if (req.method === "GET" || req.method === "HEAD") return null;
 
@@ -8,20 +6,9 @@ export async function parseRequestBody(req: IncomingMessage): Promise<any> {
     if (!chunks.length) return null;
 
     const raw = Buffer.concat(chunks).toString();
-    const type = req.headers["content-type"] || "";
-
-    if (type.includes("application/json")) {
-        return JSON.parse(raw);
-    }
-
-    if (type.includes("application/x-www-form-urlencoded")) {
-        return Object.fromEntries(new URLSearchParams(raw));
-    }
 
     return raw;
 }
-
-
 
 export function searchParamsToObject(searchParams) {
     const params = {};

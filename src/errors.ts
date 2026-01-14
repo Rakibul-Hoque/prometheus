@@ -8,6 +8,7 @@ export async function defaultOnErrorHandler(ctx: Context, err: Error) {
         status: ctx.status
     };
 }
+
 export async function defaultOnNotFoundHandler(ctx: Context) {
     ctx.status = 404;
     ctx.body = {

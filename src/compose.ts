@@ -20,33 +20,6 @@ export function compose(middleware: Middleware[]) {
     };
 }
 
-export async function dispatch2(app: App, ctx: Context): Promise<void> {
-    const chain: Middleware[] = [];
-
-    for (const entry of app.stack) {
-        if (ctx.body !== undefined) break;
-
-        if (entry.type === "middleware") {
-            const mw = entry.item as LayerMiddleware;
-            if (ctx.path.startsWith(mw.prefix)) chain.push(mw.fn);
-        } else if (entry.type === "child") {
-            const child = entry.item as App;
-            if (ctx.path.startsWith(child.prefix)) {
-                chain.push(async (ctx, next) => {
-                    await dispatch(child, ctx);
-                    if (ctx.body === undefined) await next();
-                });
-            }
-        } else if (entry.type === "route")
-            chain.push(app._router.getMiddleware());
-    }
-
-    if (chain.length > 0) {
-        const fn = compose(chain);
-        await fn(ctx);
-    }
-}
-
 export async function dispatch(app: App, ctx: Context): Promise<void> {
     const chain: Middleware[] = [];
     let pendingRoutes: Array<{
@@ -72,8 +45,7 @@ export async function dispatch(app: App, ctx: Context): Promise<void> {
         }
     };
 
-    if (ctx.currentApp !== app) 
-        ctx.appStack.push(app);
+    ctx.appStack.push(app);
     try {
         for (const entry of app.stack) {
             if (ctx.body !== undefined) break;
@@ -102,8 +74,11 @@ export async function dispatch(app: App, ctx: Context): Promise<void> {
             const fn = compose(chain);
             await fn(ctx);
         }
+    } catch (err) {
+        if(!err.app)
+        err.app = app;
+        throw err;
     } finally {
-        if (ctx.currentApp === app && ctx.appStack.length > 1)
-            ctx.appStack.pop();
+        ctx.appStack.pop();
     }
 }
