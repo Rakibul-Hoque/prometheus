@@ -15,7 +15,7 @@ import { dispatch, compose } from "./compose";
 import { respond } from "./respond";
 import type { AppOptions } from "./config";
 import { defaultOptions, installSystem } from "./config";
-import { RadixRouter } from "./radix_router";
+import { router } from "./radix_router";
 
 export class App extends BaseApp {
     parent: App | null;
@@ -36,7 +36,7 @@ export class App extends BaseApp {
     systemPost: Middleware[] = [];
     prefix: string = "";
     options: Required<AppOptions>;
-    _router: RadixRouter;
+
     constructor(
         options: AppOptions = {},
         parent: App | null = null,
@@ -46,7 +46,6 @@ export class App extends BaseApp {
         this.parent = parent;
         this.prefix = prefix;
         this.options = { ...defaultOptions, ...options };
-        this._router = new RadixRouter();
         installSystem(this);
     }
 
@@ -90,10 +89,10 @@ export class App extends BaseApp {
     }
     add(method, path, handler) {
         const fullPath = this.prefix + path;
-        this._router.add(method, fullPath, handler);
+        router.add(method, fullPath, handler);
         this.stack.push({
             type: "route" as const,
-            item: { method, path: fullPath, handler}
+            item: { method, path: fullPath, handler }
         });
     }
 

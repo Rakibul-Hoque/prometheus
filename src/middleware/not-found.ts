@@ -1,7 +1,7 @@
 import type { Context, Next } from "../types";
 
 export async function notFound(ctx: Context) {
-    if (ctx.body === undefined) {
+    if (!ctx.responded && ctx.body === undefined) {
         try {
             await ctx.currentApp.emit("notFound", ctx);
         } catch (err) {
@@ -17,3 +17,4 @@ export async function notFound(ctx: Context) {
         }
     }
 }
+

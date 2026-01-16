@@ -1,5 +1,5 @@
 import type { Middleware, Context, LayerMiddleware, App } from "./types";
-
+import { router } from "./radix_router";
 export function compose(middleware: Middleware[]) {
     return async function (ctx: Context): Promise<void> {
         let index = -1;
@@ -20,6 +20,7 @@ export function compose(middleware: Middleware[]) {
     };
 }
 
+
 export async function dispatch(app: App, ctx: Context): Promise<void> {
     const chain: Middleware[] = [];
     let pendingRoutes: Array<{
@@ -35,7 +36,7 @@ export async function dispatch(app: App, ctx: Context): Promise<void> {
             chain.push(async (ctx, next) => {
                 if (ctx.body !== undefined) return next();
 
-                const result = app._router.find(ctx.method, ctx.path);
+                const result = router.find(ctx.method, ctx.path);
                 if (result && pendingHandlers.has(result.handler)) {
                     ctx.params = result.params;
                     await result.handler(ctx);
@@ -75,8 +76,7 @@ export async function dispatch(app: App, ctx: Context): Promise<void> {
             await fn(ctx);
         }
     } catch (err) {
-        if(!err.app)
-        err.app = app;
+        if (!err.app) err.app = app;
         throw err;
     } finally {
         ctx.appStack.pop();

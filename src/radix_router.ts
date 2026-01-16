@@ -79,7 +79,6 @@ export class RadixRouter {
         node.handlers.set(methodUpper, handler);
         this.clearCache();
     }
-    
 
     find(
         method: string,
@@ -194,5 +193,4 @@ export class RadixRouter {
         );
     }
 }
-
-
+export const router = new RadixRouter();

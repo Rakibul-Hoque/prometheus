@@ -1,4 +1,7 @@
 import http from "http";
+import fsp from "fs/promises";
+import fs from "fs";
+import { getMimeType } from "../mime";
 import { EventEmitter } from "../events";
 import type { Context } from "./types";
 
@@ -60,7 +63,7 @@ export const contextPrototype: Partial<Context> = {
     },
 
     get currentApp() {
-        return this.appStack[this.appStack.length - 1] ?? this.app 
+        return this.appStack[this.appStack.length - 1] ?? this.app;
     },
     throw(status: number, message: string): never {
         const err: any = new Error(
@@ -70,6 +73,17 @@ export const contextPrototype: Partial<Context> = {
         err.expose = status < 500;
         throw err;
     },
+    async readFile(path: string, setType: boolean = true) {
+        if (setType)
+            this.type = getMimeType(path) || "application/octet-stream";
+        return await fsp.readFile(path);
+    },
+    readStream(path: string, setType: boolean = true) {
+           if (setType)
+        this.type = getMimeType(path) || "application/octet-stream";
+        return fs.createReadStream(path);
+    },
+
     redirect(url: string, status = 302) {
         this.response.redirect(url, status);
     },
