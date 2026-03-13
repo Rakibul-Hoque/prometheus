@@ -1,9 +1,9 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { requestPrototype } from "./request";
 import { responsePrototype } from "./response";
-import { contextPrototype } from "./context";
 import { parseRequestBody, searchParamsToObject } from "./utils";
 import type { Context } from "./types";
+import { baseContextPrototype } from "./baseContext";
 
 export async function createContext(
     req: IncomingMessage,
@@ -12,7 +12,7 @@ export async function createContext(
 ): Promise<Context> {
     const url = new URL(req.url || "/", `http://${req.headers.host}`);
 
-    const ctx = Object.create(contextPrototype) as Context;
+    const ctx = Object.create(baseContextPrototype) as Context;
     const request = Object.create(requestPrototype);
     const response = Object.create(responsePrototype);
 

@@ -17,7 +17,10 @@ export type LayerMiddleware = {
 
 export type Handler = (ctx: Context) => Promise<void>;
 
-export type Plugin = (app: App) => void;
+export type Plugin<T = any> = (
+    app: App,
+    opts: T
+) => void | Promise<void>;
 
 export interface Request {
     body: any;

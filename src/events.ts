@@ -19,7 +19,7 @@ export class EventEmitter {
             const handlers = app.events?.[event];
             if (handlers && handlers.length) {
                 for (const fn of handlers) fn(...args);
-                return true; // STOP at closest handler
+                return true;
             }
             app = app.parent;
         }

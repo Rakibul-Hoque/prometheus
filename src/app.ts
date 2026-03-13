@@ -9,6 +9,7 @@ import type {
     NotFoundHandler
 } from "./types";
 import { App as BaseApp } from "./types";
+import { baseContextPrototype } from "./context/baseContext";
 import { createContext } from "./context/createContext";
 import { dispatch, compose } from "./compose";
 
@@ -32,6 +33,8 @@ export class App extends BaseApp {
           }
     > = [];
 
+    _decorators = new Map<string, any>();
+    _contextDecorators = new Map<string, any>();
     systemPre: Middleware[] = [];
     systemPost: Middleware[] = [];
     prefix: string = "";
@@ -46,6 +49,7 @@ export class App extends BaseApp {
         this.parent = parent;
         this.prefix = prefix;
         this.options = { ...defaultOptions, ...options };
+
         installSystem(this);
     }
 
@@ -61,11 +65,24 @@ export class App extends BaseApp {
         }
     }
 
-    register(plugin: Plugin, prefix: string = "") {
-        const child = new App(this.options, this, this.prefix + prefix);
-
+    register<T>(plugin: Plugin<T>, opts?: T) {
+        const prefix = this.prefix + (opts as any)?.prefix ?? "";
+        const child = new App(this.options, this, prefix);
+        this._inheritDecoratorsToChild(child);
         this.stack.push({ type: "child", item: child });
-        plugin(child);
+        plugin(child, opts || ({} as T));
+    }
+
+    private _inheritDecoratorsToChild(child: App) {
+        let parent: App | null = this;
+        while (parent) {
+            for (const [name] of parent._decorators) {
+                if (!(name in child)) {
+                    child._defineDecoratorProperty(name);
+                }
+            }
+            parent = parent.parent;
+        }
     }
 
     get(path: string, handler: Handler) {
@@ -94,6 +111,70 @@ export class App extends BaseApp {
             type: "route" as const,
             item: { method, path: fullPath, handler }
         });
+    }
+    decorate(name: string, value: any) {
+        if (this._decorators.has(name)) {
+            throw new Error(
+                `Decorator '${name}' already exists on this app instance`
+            );
+        }
+        let current = this.parent;
+        while (current) {
+            if (current._decorators.has(name)) {
+                throw new Error(
+                    `Decorator '${name}' already exists in parent scope`
+                );
+            }
+            current = current.parent;
+        }
+        this._decorators.set(name, value);
+        this._defineDecoratorProperty(name);
+    }
+
+    private _defineDecoratorProperty(name: string) {
+        const self = this;
+        Object.defineProperty(this, name, {
+            get() {
+                let app: App | null = self;
+                while (app) {
+                    if (app._decorators.has(name)) {
+                        return app._decorators.get(name);
+                    }
+                    app = app.parent;
+                }
+                return undefined;
+            },
+            enumerable: true,
+            configurable: false
+        });
+    }
+
+    decorateContext(name: string, value: any) {
+        if (this._contextDecorators.has(name)) {
+            throw new Error(
+                `Context decorator '${name}' already exists in this app`
+            );
+        }
+        this._contextDecorators.set(name, value);
+        if (!(name in baseContextPrototype)) {
+            Object.defineProperty(baseContextPrototype, name, {
+                get() {
+                    const currentApp = this.currentApp;
+                    if (!currentApp) return undefined;
+                    
+                    let app: App | null = currentApp;
+                    while (app) {
+                        if (app._contextDecorators.has(name)) {
+                            return app._contextDecorators.get(name);
+                        }
+                        app = app.parent;
+                    }
+                    return undefined;
+                },
+                enumerable: true,
+                configurable: true
+            });
+        }
     }
 
     listen(port: number) {

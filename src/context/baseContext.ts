@@ -5,7 +5,7 @@ import { getMimeType } from "../mime";
 import { EventEmitter } from "../events";
 import type { Context } from "./types";
 
-export const contextPrototype: Partial<Context> = {
+export const baseContextPrototype: Partial<Context> = {
     get method() {
         return this.request.method;
     },
@@ -79,8 +79,8 @@ export const contextPrototype: Partial<Context> = {
         return await fsp.readFile(path);
     },
     readStream(path: string, setType: boolean = true) {
-           if (setType)
-        this.type = getMimeType(path) || "application/octet-stream";
+        if (setType)
+            this.type = getMimeType(path) || "application/octet-stream";
         return fs.createReadStream(path);
     },
 
