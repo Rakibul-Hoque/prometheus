@@ -19,7 +19,7 @@ import { defaultOptions, installSystem } from "./config";
 import { router } from "./radix_router";
 
 export class App extends BaseApp {
-    parent: App | null;
+    parent: App | null = null;
     stack: Array<
         | { type: "middleware"; item: LayerMiddleware }
         | { type: "child"; item: App }
@@ -40,17 +40,11 @@ export class App extends BaseApp {
     prefix: string = "";
     options: Required<AppOptions>;
 
-    constructor(
-        options: AppOptions = {},
-        parent: App | null = null,
-        prefix = ""
-    ) {
+    constructor(options: AppOptions = {}) {
         super();
-        this.parent = parent;
-        this.prefix = prefix;
+        
         this.options = { ...defaultOptions, ...options };
-
-        installSystem(this);
+        installSystem(this, this.options);
     }
 
     use(fn: Middleware | Middleware[], prefix: string = "") {
@@ -67,7 +61,10 @@ export class App extends BaseApp {
 
     register<T>(plugin: Plugin<T>, opts?: T) {
         const prefix = this.prefix + (opts as any)?.prefix ?? "";
-        const child = new App(this.options, this, prefix);
+        const child = new App(this.options);
+        child.parent = this;
+        child.prefix = prefix;
+
         this._inheritDecoratorsToChild(child);
         this.stack.push({ type: "child", item: child });
         plugin(child, opts || ({} as T));
@@ -161,7 +158,7 @@ export class App extends BaseApp {
                 get() {
                     const currentApp = this.currentApp;
                     if (!currentApp) return undefined;
-                    
+
                     let app: App | null = currentApp;
                     while (app) {
                         if (app._contextDecorators.has(name)) {

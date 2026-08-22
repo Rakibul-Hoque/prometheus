@@ -1,4 +1,4 @@
-// src/error-boundary.ts
+
 import type { Context, Next } from "../types";
 
 export async function errorBoundary(ctx: Context, next: Next) {

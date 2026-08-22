@@ -1,5 +1,6 @@
 import type { Middleware, Context, LayerMiddleware, App } from "./types";
 import { router } from "./radix_router";
+
 export function compose(middleware: Middleware[]) {
     return async function (ctx: Context): Promise<void> {
         let index = -1;
@@ -19,7 +20,6 @@ export function compose(middleware: Middleware[]) {
         await dispatch(0);
     };
 }
-
 
 export async function dispatch(app: App, ctx: Context): Promise<void> {
     const chain: Middleware[] = [];
@@ -52,15 +52,18 @@ export async function dispatch(app: App, ctx: Context): Promise<void> {
             if (ctx.body !== undefined) break;
 
             if (entry.type === "middleware") {
-                flushRoutes();
-
                 const mw = entry.item as LayerMiddleware;
-                if (ctx.path.startsWith(mw.prefix)) chain.push(mw.fn);
+                if (ctx.path.startsWith(mw.prefix)) {
+                    flushRoutes();
+
+                    chain.push(mw.fn);
+                }
             } else if (entry.type === "child") {
-                flushRoutes();
 
                 const child = entry.item as App;
                 if (ctx.path.startsWith(child.prefix)) {
+                flushRoutes();
+                  
                     chain.push(async (ctx, next) => {
                         await dispatch(child, ctx);
                         if (ctx.body === undefined) await next();
