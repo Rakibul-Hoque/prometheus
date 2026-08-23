@@ -6,12 +6,13 @@ import type {
     Handler,
     Context,
     ErrorHandler,
-    NotFoundHandler
+    NotFoundHandler,
+    StackType
 } from "./types";
 import { App as BaseApp } from "./types";
 import { baseContextPrototype } from "./context/baseContext";
 import { createContext } from "./context/createContext";
-import { dispatch, compose } from "./compose";
+import { compile, compileApp, compose } from "./compose";
 
 import { respond } from "./respond";
 import type { AppOptions } from "./config";
@@ -20,18 +21,7 @@ import { router } from "./radix_router";
 
 export class App extends BaseApp {
     parent: App | null = null;
-    stack: Array<
-        | { type: "middleware"; item: LayerMiddleware }
-        | { type: "child"; item: App }
-        | {
-              type: "route";
-              item: {
-                  method: string;
-                  path: string;
-                  handler: Handler;
-              };
-          }
-    > = [];
+    stack: StackType = [];
 
     _decorators = new Map<string, any>();
     _contextDecorators = new Map<string, any>();
@@ -42,7 +32,7 @@ export class App extends BaseApp {
 
     constructor(options: AppOptions = {}) {
         super();
-        
+
         this.options = { ...defaultOptions, ...options };
         installSystem(this, this.options);
     }
@@ -60,7 +50,7 @@ export class App extends BaseApp {
     }
 
     register<T>(plugin: Plugin<T>, opts?: T) {
-        const prefix = this.prefix + (opts as any)?.prefix ?? "";
+        const prefix = this.prefix + (opts?.prefix ?? "");
         const child = new App(this.options);
         child.parent = this;
         child.prefix = prefix;
@@ -173,8 +163,27 @@ export class App extends BaseApp {
             });
         }
     }
-
     listen(port: number) {
+        const appMiddleware = compile(this);
+        const requestMiddleware = compose([
+            ...this.systemPre,
+            appMiddleware,
+            ...this.systemPost
+        ]);
+
+        const server = http.createServer(async (req, res) => {
+            const ctx = await createContext(req, res, this);
+            try {
+                await requestMiddleware(ctx);
+            } finally {
+                await respond(ctx);
+            }
+        });
+
+        server.listen(port);
+    }
+
+    listen2(port: number) {
         const server = http.createServer(async (req, res) => {
             const ctx = await createContext(req, res, this);
 

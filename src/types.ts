@@ -1,10 +1,8 @@
-
-export { EventEmitter } from "./events"; 
-export type { Context } from "./context/types"; 
-
-
-import { IncomingMessage, ServerResponse } from "http";
+export { EventEmitter } from "./events";
 import { EventEmitter } from "./events";
+
+export type { Context } from "./context/types";
+import { IncomingMessage, ServerResponse } from "http";
 
 export type Next = () => Promise<void>;
 
@@ -17,10 +15,7 @@ export type LayerMiddleware = {
 
 export type Handler = (ctx: Context) => Promise<void>;
 
-export type Plugin<T = any> = (
-    app: App,
-    opts: T
-) => void | Promise<void>;
+export type Plugin<T = any> = (app: App, opts: T) => void | Promise<void>;
 
 export interface Request {
     body: any;
@@ -45,3 +40,16 @@ export interface RadixNode {
 }
 
 export class App extends EventEmitter {}
+
+export type StackType = Array<
+    | { type: "middleware"; item: LayerMiddleware }
+    | { type: "child"; item: App }
+    | {
+          type: "route";
+          item: {
+              method: string;
+              path: string;
+              handler: Handler;
+          };
+      }
+>;

@@ -128,7 +128,7 @@ export class RadixRouter {
             if (handler) {
                 return { handler, params: { ...params } };
             }
-            return null;
+            return undefined;
         }
 
         const segment = segments[index];
@@ -168,7 +168,7 @@ export class RadixRouter {
             }
         }
 
-        return null;
+        return undefined;
     }
 
     clearCache() {

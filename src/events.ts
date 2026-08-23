@@ -2,7 +2,7 @@ export class EventEmitter {
     private events = {};
 
     on(event: string, fn: any): void {
-        if (event === "error" || event === "not-Found") {
+        if (event === "error" || event === "notFound") {
             this.events[event] = [fn];
         }
 

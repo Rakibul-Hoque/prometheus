@@ -38,7 +38,8 @@ export async function createContext(
     ctx.response = response;
 
     ctx.state = Object.create(null);
-    ctx.responded = false;
+    ctx. __responded__ = false 
+    
 
     res.statusCode = 200;
 

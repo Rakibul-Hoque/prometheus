@@ -8,8 +8,9 @@ export async function errorBoundary(ctx: Context, next: Next) {
         ctx.status = err.status || 500;
         const app = err.app ?? ctx.currentApp;
 
-        try {
-            await app.emit("error", ctx, err);
+        try { 
+            await app.emit("error", ctx, err); 
+            
         } catch (handlerErr) {
             console.error("Error in on error handler:", handlerErr);
             ctx.status = 500;

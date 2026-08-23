@@ -2,8 +2,8 @@ import type { Context } from "./types";
 import { Stream } from "stream";
 
 export async function respond(ctx: Context) {
-    if (ctx.responded) return;
-    ctx.responded = true;
+   // if (ctx.responded) return;
+    ctx.end();
 
     const res = ctx.res;
     const body = ctx.body;
@@ -14,7 +14,7 @@ export async function respond(ctx: Context) {
     }
 
     if (body._redirect || (ctx.status >= 300 && ctx.status < 400)) {
-        res.end()
+        res.end();
         return;
     }
 
