@@ -22,13 +22,14 @@ import { router } from "./radix_router";
 export class App extends BaseApp {
     parent: App | null = null;
     stack: StackType = [];
-
+    router = router
     _decorators = new Map<string, any>();
     _contextDecorators = new Map<string, any>();
     systemPre: Middleware[] = [];
     systemPost: Middleware[] = [];
     prefix: string = "";
     options: Required<AppOptions>;
+    private _started = false;
 
     constructor(options: AppOptions = {}) {
         super();
@@ -38,6 +39,8 @@ export class App extends BaseApp {
     }
 
     use(fn: Middleware | Middleware[], prefix: string = "") {
+        this._assertMutable();
+
         const list = Array.isArray(fn) ? fn : [fn];
         for (const middleware of list) {
             const layer = {
@@ -50,6 +53,8 @@ export class App extends BaseApp {
     }
 
     register<T>(plugin: Plugin<T>, opts?: T) {
+        this._assertMutable();
+
         const prefix = this.prefix + (opts?.prefix ?? "");
         const child = new App(this.options);
         child.parent = this;
@@ -92,6 +97,8 @@ export class App extends BaseApp {
         return this;
     }
     add(method, path, handler) {
+        this._assertMutable();
+
         const fullPath = this.prefix + path;
         router.add(method, fullPath, handler);
         this.stack.push({
@@ -100,6 +107,8 @@ export class App extends BaseApp {
         });
     }
     decorate(name: string, value: any) {
+        this._assertMutable()
+        ;
         if (this._decorators.has(name)) {
             throw new Error(
                 `Decorator '${name}' already exists on this app instance`
@@ -137,6 +146,8 @@ export class App extends BaseApp {
     }
 
     decorateContext(name: string, value: any) {
+       this._assertMutable()
+       
         if (this._contextDecorators.has(name)) {
             throw new Error(
                 `Context decorator '${name}' already exists in this app`
@@ -163,7 +174,15 @@ export class App extends BaseApp {
             });
         }
     }
+
+    private _assertMutable() {
+        if (this._started) {
+            throw new Error("Cannot modify an application after listen()");
+        }
+    }
     listen(port: number) {
+        this._started = true;
+
         const appMiddleware = compile(this);
         const requestMiddleware = compose([
             ...this.systemPre,
@@ -175,30 +194,6 @@ export class App extends BaseApp {
             const ctx = await createContext(req, res, this);
             try {
                 await requestMiddleware(ctx);
-            } finally {
-                await respond(ctx);
-            }
-        });
-
-        server.listen(port);
-    }
-
-    listen2(port: number) {
-        const server = http.createServer(async (req, res) => {
-            const ctx = await createContext(req, res, this);
-
-            try {
-                const fn = compose([
-                    ...this.systemPre,
-                    async (ctx, next) => {
-                        await dispatch(this, ctx);
-                        if (ctx.body === undefined) {
-                            await next();
-                        }
-                    },
-                    ...this.systemPost
-                ]);
-                await fn(ctx);
             } finally {
                 await respond(ctx);
             }

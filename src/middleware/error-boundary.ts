@@ -1,4 +1,3 @@
-
 import type { Context, Next } from "../types";
 
 export async function errorBoundary(ctx: Context, next: Next) {
@@ -8,26 +7,23 @@ export async function errorBoundary(ctx: Context, next: Next) {
         ctx.status = err.status || 500;
         const app = err.app ?? ctx.currentApp;
 
-        try { 
-            await app.emit("error", ctx, err); 
-            
+        try {
+            await ctx.currentApp.emit("error", ctx, err);
         } catch (handlerErr) {
             console.error("Error in on error handler:", handlerErr);
-            ctx.status = 500;
-            ctx.body = {
-                error: "Internal Server Error"
-            };
+            
+            ctx.send(
+                err.expose
+                    ? { error: err.message }
+                    : { error: "Internal Server Error" },
+                ctx.status ?? 500,
+                ctx.type ?? "json"
+            );
             return;
         }
 
-        if (ctx.body === undefined) {
-            ctx.body = err.expose
-                ? { error: err.message }
-                : { error: "Internal Server Error" };
-        }
-
-        if (!ctx.type) {
-            ctx.type = "json";
+        if (!ctx.responded) {
+        ctx.send({ error: "Internal Server Error" }, ctx.status ?? 500); 
         }
     }
 }

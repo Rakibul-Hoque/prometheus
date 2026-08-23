@@ -37,6 +37,6 @@ function proxyRequest(
 export function proxy(target: string): Middleware {
     return async ctx => {
         proxyRequest(ctx.req, ctx.res, target);
-        ctx.responded = true; // IMPORTANT: prevent normal response
+        ctx.end(); // IMPORTANT: prevent normal response
     };
 }

@@ -48,7 +48,7 @@ export function compileApp(app: App): Middleware {
         const methods = new Set(pendingRoutes.map(route => route.method));
 
         chain.push(async (ctx, next) => {
-            if (ctx.body !== undefined) return;
+            if (ctx.responded) return;
             if (!methods.has(ctx.method)) {
                 await next();
                 return;
@@ -109,13 +109,13 @@ export function compileApp(app: App): Middleware {
                             const error = err as Error & { app?: App };
                             error.app ??= child;
                         }
-                        
+
                         throw err;
                     } finally {
                         ctx.appStack.pop();
                     }
 
-                    if (ctx.body === undefined) {
+                    if (!ctx.responded) {
                         await next();
                     }
                 });
@@ -148,7 +148,7 @@ export function compile(app: App): Middleware {
             ctx.appStack.pop();
         }
 
-        if (ctx.body === undefined) {
+        if (!ctx.responded) {
             await next();
         }
     };

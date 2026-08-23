@@ -2,8 +2,7 @@ import type { Context } from "./types";
 import { Stream } from "stream";
 
 export async function respond(ctx: Context) {
-   // if (ctx.responded) return;
-    ctx.end();
+    if (ctx.responded) ctx.end();
 
     const res = ctx.res;
     const body = ctx.body;

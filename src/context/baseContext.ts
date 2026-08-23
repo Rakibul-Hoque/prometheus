@@ -3,6 +3,7 @@ import fsp from "fs/promises";
 import fs from "fs";
 import { getMimeType } from "../mime";
 import { EventEmitter } from "../events";
+
 import type { Context } from "./types";
 
 export const baseContextPrototype: Partial<Context> = {
@@ -113,8 +114,9 @@ export const baseContextPrototype: Partial<Context> = {
         } finally {
             this.__responded__ = true;
         }
-    }, 
-    end(...args:any[]){
-      this.send(...args)
+    },
+    end(...args: any[]) {
+        if (args.length > 0) this.send(...args);
+        else this.__responded__ = true;
     }
 };

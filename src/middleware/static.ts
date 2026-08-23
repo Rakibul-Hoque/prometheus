@@ -15,6 +15,7 @@ export function serveStatic(root: string) {
         if (!stat.isFile()) return next();
 
         ctx.type = getMimeType(filePath) || "application/octet-stream";
-        ctx.body = fs.createReadStream(filePath);
+        ctx.body = fs.createReadStream(filePath); 
+        ctx.end()
     };
 }
