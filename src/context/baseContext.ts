@@ -7,116 +7,121 @@ import { EventEmitter } from "../events";
 import type { Context } from "./types";
 
 export const baseContextPrototype: Partial<Context> = {
-    __responded__: false,
+  __responded__: false,
 
-    get method() {
-        return this.request.method;
-    },
+  get method() {
+    return this.request.method;
+  },
 
-    get path() {
-        return this.request.path;
-    },
+  get path() {
+    return this.request.path;
+  },
 
-    get headers() {
-        return this.request.headers;
-    },
+  get headers() {
+    return this.request.headers;
+  },
 
-    get query() {
-        return this.request.query;
-    },
-    get ip() {
-        return this.request.ip;
-    },
+  get query() {
+    return this.request.query;
+  },
+  get ip() {
+    return this.request.ip;
+  },
 
-    get params() {
-        return this.request.params;
-    },
+  get params() {
+    return this.request.params;
+  },
 
-    set params(value) {
-        this.request.params = value;
-    },
+  set params(value) {
+    this.request.params = value;
+  },
 
-    get body() {
-        return this.response.body;
-    },
-    set body(value: any) {
-        this.response.body = value;
-    },
+  get body() {
+    return this.response.body;
+  },
+  set body(value: any) {
+    this.response.body = value;
+  },
 
-    get status() {
-        return this.response.status;
-    },
-    set status(code: number) {
-        this.response.status = code;
-    },
+  get status() {
+    return this.response.status;
+  },
 
-    get type() {
-        return this.response.type;
-    },
-    set type(value: string) {
-        this.response.type = value;
-    },
+  set status(code: number) {
+    this.response.status = code;
+  },
 
-    get(name: string) {
-        return this.request.get(name);
-    },
+  get type() {
+    return this.response.type
+  },
 
-    set(name: string, value: string) {
-        this.response.set(name, value);
-    },
+  set type(value: string) {
+    this.response.type = value;
+  },
 
-    get currentApp() {
-        return this.appStack[this.appStack.length - 1] ?? this.app;
-    },
-    throw(status: number, message: string): never {
-        const err: any = new Error(
-            message || http.STATUS_CODES[status] || "Error"
-        );
-        err.status = status;
-        err.expose = status < 500;
-        throw err;
-    },
-    async readFile(path: string, setType: boolean = true) {
-        if (setType)
-            this.type = getMimeType(path) || "application/octet-stream";
-        return await fsp.readFile(path);
-    },
-    readStream(path: string, setType: boolean = true) {
-        if (setType)
-            this.type = getMimeType(path) || "application/octet-stream";
-        return fs.createReadStream(path);
-    },
+  get(name: string) {
+    return this.request.get(name);
+  },
 
-    redirect(url: string, status = 302) {
-        this.response.redirect(url, status);
-    },
-    assert(condition: any, message: string, status = 400) {
-        if (!condition) this.throw(status, message);
-    },
+  set(nameOrHeaders: string | Record<string, string>, value?: string) {
+    this.response.set(name, value);
+  },
 
-    emit(event: string, ...args: any[]) {
-        return this.currentApp.emit(event, ...args);
-    },
+  get currentApp() {
+    return this.appStack[this.appStack.length - 1] ?? this.app;
+  },
+  throw(status: number, message: string): never {
+    const err: any = new Error(
+      message || http.STATUS_CODES[status] || "Error"
+    );
+    err.status = status;
+    err.expose = status < 500;
+    throw err;
+  },
+  async readFile(path: string, setType: boolean = true) {
+    if (setType)
+      this.type = getMimeType(path) || "application/octet-stream";
+    return await fsp.readFile(path);
+  },
+  readStream(path: string, setType: boolean = true) {
+    if (setType)
+      this.type = getMimeType(path) || "application/octet-stream";
+    return fs.createReadStream(path);
+  },
 
-    get responded(): boolean {
-        return this.__responded__;
-    },
+  redirect(url: string, status = 302) {
+    this.response.redirect(url, status);
+  },
+  assert(condition: any, message: string, status = 400) {
+    if (!condition) this.throw(status, message);
+  },
 
-    send(
-        data: any | null = null,
-        status: number | null = null,
-        type: string | null = null
-    ): void {
-        try {
-            if (data) this.body = data;
-            if (status) this.status = status;
-            if (type) this.type = type;
-        } finally {
-            this.__responded__ = true;
-        }
-    },
-    end(...args: any[]) {
-        if (args.length > 0) this.send(...args);
-        else this.__responded__ = true;
+  emit(event: string, ...args: any[]) {
+    return this.currentApp.emit(event, ...args);
+  },
+
+  get responded(): boolean {
+    return this.__responded__ ? true : false
+  },
+
+  send(
+    data: any | null = null,
+    status: number | null = null,
+    type: string | null = null
+  ): void {
+
+    if (this.__responded__) return
+
+    try {
+      if (data) this.body = data;
+      if (status) this.status = status;
+      if (type) this.type = type;
+    } finally {
+      this.__responded__ = true;
     }
+  },
+  end(...args: any[]) {
+    if (args.length > 0) this.send(...args);
+    else this.__responded__ = true;
+  }
 };

@@ -1,36 +1,59 @@
 import type { Middleware } from "../types";
 import querystring from "querystring";
 
+
+
+
+
 export const bodyParser: Middleware = async (ctx, next) => {
-    const raw = ctx.request.body;
+  const raw = ctx.request.body;
 
-    if (raw == null || (typeof raw !== "string" && !Buffer.isBuffer(raw))) {
-        return next();
-    }
+  if (raw == null) {
+    return next();
+  }
 
-    const text = Buffer.isBuffer(raw) ? raw.toString("utf8") : raw;
-    const contentType = ctx.get("content-type")?.split(";")[0];
+  const contentType = ctx.get("Content-Type")?.split(";")[0].trim().toLowerCase();
 
-    try {
-        switch (contentType) {
-            case "application/json":
-                ctx.request.body= text.length ? JSON.parse(text) : {};
-                break;
+  try {
+    switch (contentType) {
+      case "application/json": {
+        const text = Buffer.isBuffer(raw) ? raw.toString("utf8") : String(raw);
+        ctx.request.body = text.length ? JSON.parse(text) : {};
+        break;
+      }
 
-            case "application/x-www-form-urlencoded":
-            ctx.request.body = querystring.parse(text);
-                break;
+      case "application/x-www-form-urlencoded": {
+        const text = Buffer.isBuffer(raw) ? raw.toString("utf8") : String(raw);
+        ctx.request.body = querystring.parse(text);
+        break;
+      }
 
-            case "text/plain":
-                ctx.request.body = text;
-                break;
+      case "text/plain": {
+        ctx.request.body = Buffer.isBuffer(raw) ? raw.toString("utf8") : String(raw);
+        break;
+      }
 
-            default:
-                ctx.request.body = text;
+      case "image/jpeg":
+      case "image/png":
+      case "image/gif":
+      case "image/webp":
+      case "application/pdf":
+      case "application/octet-stream": {
+        ctx.request.body = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+        break;
+      }
+
+      default:
+        if (contentType?.startsWith("image/")) {
+          ctx.request.body = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+        } else {
+          ctx.request.body = Buffer.isBuffer(raw) ? raw.toString("utf8") : raw;
         }
-    } catch {
-        ctx.throw(400, "Invalid request body");
+        break;
     }
+  } catch {
+    ctx.throw(400, "Invalid request body");
+  }
 
-    await next();
+  await next();
 };
