@@ -2,17 +2,20 @@ import type { Context } from "./types";
 import { Stream } from "stream";
 
 export async function respond(ctx: Context) {
-    if (ctx.responded) ctx.end();
+    if (ctx._execState._proxy___) return;
 
     const res = ctx.res;
     const body = ctx.body;
 
-    if (body === undefined || body === null) {
+    if (
+        ctx._execState._redirect___ ||
+        (ctx.status >= 300 && ctx.status < 400)
+    ) {
         res.end();
         return;
     }
 
-    if (body._redirect || (ctx.status >= 300 && ctx.status < 400)) {
+    if (body === undefined || body === null) {
         res.end();
         return;
     }

@@ -34,11 +34,9 @@ function proxyRequest(
     req.pipe(proxyReq);
 }
 
-
-
 export function proxy(target: string): Middleware {
-    return async (ctx) => {
+    return async ctx => {
         proxyRequest(ctx.req, ctx.res, target);
-        ctx.respond = false; // IMPORTANT: prevent normal response
+        ctx._respond___ = false; // IMPORTANT: prevent normal response
     };
 }

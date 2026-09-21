@@ -1,4 +1,5 @@
 import http from "http";
+import { create_mock } from "./mock_test";
 import type {
     Middleware,
     LayerMiddleware,
@@ -13,16 +14,17 @@ import { App as BaseApp } from "./types";
 import { baseContextPrototype } from "./context/baseContext";
 import { createContext } from "./context/createContext";
 import { compile, compileApp, compose } from "./compose";
-
 import { respond } from "./respond";
 import type { AppOptions } from "./config";
 import { defaultOptions, installSystem } from "./config";
-import { router } from "./radix_router";
+import { RadixRouter } from "./radix_router";
+import { joinPaths } from "./util";
 
 export class App extends BaseApp {
     parent: App | null = null;
+    _handler = null;
     stack: StackType = [];
-    router = router
+    router = new RadixRouter();
     _decorators = new Map<string, any>();
     _contextDecorators = new Map<string, any>();
     systemPre: Middleware[] = [];
@@ -55,14 +57,22 @@ export class App extends BaseApp {
     register<T>(plugin: Plugin<T>, opts?: T) {
         this._assertMutable();
 
-        const prefix = this.prefix + (opts?.prefix ?? "");
+        const childPrefix = joinPaths(this.prefix, opts?.prefix ?? "");
+
         const child = new App(this.options);
+
         child.parent = this;
-        child.prefix = prefix;
+        child.prefix = childPrefix;
 
         this._inheritDecoratorsToChild(child);
-        this.stack.push({ type: "child", item: child });
+
+        this.stack.push({
+            type: "child",
+            item: child
+        });
+
         plugin(child, opts || ({} as T));
+        return this;
     }
 
     private _inheritDecoratorsToChild(child: App) {
@@ -77,38 +87,52 @@ export class App extends BaseApp {
         }
     }
 
-    get(path: string, handler: Handler) {
-        this.add("GET", path, handler);
-        return this;
+    get(path: string, ...handlers: (Middleware | Handler)[]) {
+        return this.add("GET", path, handlers);
     }
 
-    post(path: string, handler: Handler) {
-        this.add("POST", path, handler);
-        return this;
+    post(path: string, ...handlers: (Middleware | Handler)[]) {
+        return this.add("POST", path, handlers);
     }
 
-    put(path: string, handler: Handler) {
-        this.add("PUT", path, handler);
-        return this;
+    put(path: string, ...handlers: (Middleware | Handler)[]) {
+        return this.add("PUT", path, handlers);
     }
 
-    delete(path: string, handler: Handler) {
-        this.add("DELETE", path, handler);
-        return this;
+    delete(path: string, ...handlers: (Middleware | Handler)[]) {
+        return this.add("DELETE", path, handlers);
     }
-    add(method, path, handler) {
+
+    private add(
+        method: string,
+        path: string,
+        handlers: (Middleware | Handler)[]
+    ) {
         this._assertMutable();
+        if (handlers.length === 0) {
+            throw new Error(`${method} ${path}: route requires a handler`);
+        }
+        const handler = handlers[handlers.length - 1] as Handler;
+        const middleware = handlers.slice(0, -1) as Middleware[];
 
-        const fullPath = this.prefix + path;
-        router.add(method, fullPath, handler);
+        const fullPath = joinPaths(this.prefix, path);
+
+        const route: Route = {
+            method: method.toUpperCase(),
+            path: fullPath,
+            middleware,
+            handler
+        };
+        this.router.add(route);
         this.stack.push({
-            type: "route" as const,
-            item: { method, path: fullPath, handler }
+            type: "route",
+            item: route
         });
+        return this;
     }
+
     decorate(name: string, value: any) {
-        this._assertMutable()
-        ;
+        this._assertMutable();
         if (this._decorators.has(name)) {
             throw new Error(
                 `Decorator '${name}' already exists on this app instance`
@@ -146,8 +170,8 @@ export class App extends BaseApp {
     }
 
     decorateContext(name: string, value: any) {
-       this._assertMutable()
-       
+        this._assertMutable();
+
         if (this._contextDecorators.has(name)) {
             throw new Error(
                 `Context decorator '${name}' already exists in this app`
@@ -177,12 +201,15 @@ export class App extends BaseApp {
 
     private _assertMutable() {
         if (this._started) {
-            throw new Error("Cannot modify an application after listen()");
+            throw new Error(
+                "Cannot modify an application after handler is created  Error: handler()"
+            );
         }
     }
-    listen(port: number) {
-        this._started = true;
 
+    handler() {
+        if (this._handler) return this._handler;
+        this._started = true;
         const appMiddleware = compile(this);
         const requestMiddleware = compose([
             ...this.systemPre,
@@ -190,15 +217,25 @@ export class App extends BaseApp {
             ...this.systemPost
         ]);
 
-        const server = http.createServer(async (req, res) => {
+        this._handler = async (req, res) => {
             const ctx = await createContext(req, res, this);
             try {
                 await requestMiddleware(ctx);
             } finally {
                 await respond(ctx);
             }
-        });
+        };
 
-        server.listen(port);
+        return this._handler;
+    }
+
+    listen(port: number, callback?: () => void) {
+        const server = http.createServer(this.handler());
+        server.listen(port, callback);
+        return server;
+    }
+
+    createMock() {
+        return create_mock(this);
     }
 }

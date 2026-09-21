@@ -1,10 +1,6 @@
 import type { Middleware } from "../types";
 import querystring from "querystring";
 
-
-
-
-
 export const bodyParser: Middleware = async (ctx, next) => {
   const raw = ctx.request.body;
 

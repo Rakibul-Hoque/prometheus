@@ -1,7 +1,7 @@
 import type { Context, Next } from "../types";
 
 export async function errorBoundary(ctx: Context, next: Next) {
-  try {
+try {
     await next();
   } catch (err: any) {
     ctx.status = err.status || 500;
@@ -25,5 +25,5 @@ export async function errorBoundary(ctx: Context, next: Next) {
     if (!ctx.responded) {
       ctx.send({ error: "Internal Server Error" }, ctx.status ?? 500);
     } 
-  } 
+  }  
 }

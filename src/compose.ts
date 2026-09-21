@@ -6,14 +6,21 @@ import type {
     Handler
 } from "./types";
 
-import { router } from "./radix_router";
-
 export function compose(middleware: readonly Middleware[]): Middleware {
-    return async function composed(ctx: Context): Promise<void> {
+    return async function composed(
+        ctx: Context,
+        next?: () => Promise<void>
+    ): Promise<void> {
         let index = -1;
+
         const dispatch = async (i: number): Promise<void> => {
             if (i <= index) throw new Error("next() called multiple times");
             index = i;
+            if (i === middleware.length) {
+                if (next) await next();
+                return;
+            }
+
             const fn = middleware[i];
             if (!fn) return;
             await fn(ctx, () => dispatch(i + 1));
@@ -30,37 +37,51 @@ const matchesPrefix = (path: string, prefix: string): boolean => {
     );
 };
 
+function compileRoute(route: Route): void {
+    if (route.execute) {
+        return;
+    }
+    route.execute = compose([
+        ...route.middleware,
+        async ctx => {
+            await route.handler(ctx);
+        }
+    ]);
+}
+
 export function compileApp(app: App): Middleware {
     const chain: Middleware[] = [];
 
-    let pendingRoutes: Array<{
-        method: string;
-        path: string;
-        handler: Handler;
-    }> = [];
+    let pendingRoutes: Route[] = [];
 
     const flushRoutes = () => {
-        if (pendingRoutes.length === 0) {
-            return;
-        }
-        const handlers = new Set(pendingRoutes.map(route => route.handler));
+        if (pendingRoutes.length === 0) return;
 
-        const methods = new Set(pendingRoutes.map(route => route.method));
+        const routes = pendingRoutes;
+
+        for (const route of routes) {
+            compileRoute(route);
+        }
+
+        const routeSet = new Set(routes);
 
         chain.push(async (ctx, next) => {
             if (ctx.responded) return;
-            if (!methods.has(ctx.method)) {
+
+            const result = app.router.find(ctx.method, ctx.path);
+
+            if (!result) {
                 await next();
                 return;
             }
-            const result = router.find(ctx.method, ctx.path);
-
-            if (result !== undefined && handlers.has(result.handler)) {
-                ctx.params = result.params;
-                await result.handler(ctx);
+            if (!routeSet.has(result.route)) {
+                await next();
                 return;
             }
-            await next();
+
+            ctx.params = result.params;
+            ctx._execState._isRouteFound___  = true;
+            await result.route.execute!(ctx);
         });
 
         pendingRoutes = [];
@@ -76,15 +97,17 @@ export function compileApp(app: App): Middleware {
             case "middleware": {
                 flushRoutes();
 
-                const mw = entry.item as LayerMiddleware;
+                const mw = entry.item;
 
                 chain.push(async (ctx, next) => {
                     if (!matchesPrefix(ctx.path, mw.prefix)) {
                         await next();
                         return;
                     }
+
                     await mw.fn(ctx, next);
                 });
+
                 break;
             }
 
@@ -106,7 +129,10 @@ export function compileApp(app: App): Middleware {
                         await childFn(ctx);
                     } catch (err) {
                         if (err instanceof Error) {
-                            const error = err as Error & { app?: App };
+                            const error = err as Error & {
+                                app?: App;
+                            };
+
                             error.app ??= child;
                         }
 
@@ -135,11 +161,15 @@ export function compile(app: App): Middleware {
 
     return async (ctx, next) => {
         ctx.appStack.push(app);
+
         try {
             await appFn(ctx);
         } catch (err) {
             if (err instanceof Error) {
-                const error = err as Error & { app?: App };
+                const error = err as Error & {
+                    app?: App;
+                };
+
                 error.app ??= app;
             }
 
