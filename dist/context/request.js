@@ -1,8 +1,9 @@
-import type { Request } from "./types";
-import { getReverseMimeType } from "../mime";
-
-export const requestPrototype: Partial<Request> = {
-    get(name: string) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.requestPrototype = void 0;
+const mime_1 = require("../mime");
+exports.requestPrototype = {
+    get(name) {
         return this.headers[name.toLowerCase()];
     },
     get type() {
@@ -10,7 +11,7 @@ export const requestPrototype: Partial<Request> = {
             ?.split(";")[0]
             .trim()
             .toLowerCase();
-        return getReverseMimeType(raw_type);
+        return (0, mime_1.getReverseMimeType)(raw_type);
     },
     get typeRaw() {
         return this.get("Content-Type")?.split(";")[0].trim();
@@ -21,7 +22,7 @@ export const requestPrototype: Partial<Request> = {
             ? xfwd.split(",")[0].trim()
             : this.remoteAddress;
     },
-    is(type: string) {
+    is(type) {
         const ct = this.type;
         return typeof ct === "string" && ct.includes(type);
     },
@@ -29,14 +30,14 @@ export const requestPrototype: Partial<Request> = {
         const cookieString = this.get("cookie");
         if (cookieString) {
             const cookies = {};
-
             cookieString
                 .split(";")
                 .map(c => c.trim())
                 .map(c => {
-                    const pair = c.split("=").map(p => p.trim());
-                    if (pair.length == 2) cookies[pair[0]] = pair[1];
-                });
+                const pair = c.split("=").map(p => p.trim());
+                if (pair.length == 2)
+                    cookies[pair[0]] = pair[1];
+            });
             return cookies;
         }
         return undefined;

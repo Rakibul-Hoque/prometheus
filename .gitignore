@@ -1,4 +1,6 @@
 /block_chain_server
 /node_modules
-/test
+/tests
+/manual-test
 /usage
+/prototype

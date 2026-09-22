@@ -1,27 +1,34 @@
-import { IncomingMessage, ServerResponse } from "http";
 import { App } from "../types";
 
+export interface RequestContext {
+    headers: Record<string, string | (string | number)[]>;
+    method: string;
+    url: string;
+    body: any;
+    remoteAddress: string;
+    host : string;
+    port: number;
+}
+
 export interface Request {
-    req: IncomingMessage;
     method: string;
     path: string;
     url: string;
-    headers: IncomingMessage["headers"];
-    query: Record<string, string>;
+    headers: Record<string, string | (string | number)[]>;
+    query: Record<string, string | (string | number)[]>;
     params: Record<string, string>;
     body: any;
-
-    get(name: string): any;
+    remoteAddress: string;
+    get(name: string): string;
     is(type: string): boolean;
 }
 
 export interface Response {
-    res: ServerResponse;
+    headers: Record<string, string | (string | number)[]>;
     status: number;
     body: any;
     type?: string;
     length?: number;
-
     set(name: string, value: string): void;
     append(name: string, value: string): void;
     remove(name: string): void;
@@ -33,19 +40,18 @@ export interface Context {
     appStack: App[];
     currentApp: App;
 
-    req: IncomingMessage;
-    res: ServerResponse;
-
     request: Request;
     response: Response;
 
     state: Record<string, any>;
-    responded: boolean;
+    _responded___: boolean;
+    responded(): boolean;
+    _execState: Record<string, boolean | string | number>;
 
     /* shortcuts */
     method: string;
     path: string;
-    headers: IncomingMessage["headers"];
+    headers: Record<string, string | (string | number)[]>;
     query: Record<string, string>;
     params: Record<string, string>;
     body: any;
@@ -57,7 +63,8 @@ export interface Context {
     set(name: string, value: string): void;
     throw(status: number, message?: string): never;
     assert(condition: any, message: string, status?: number): void;
-
+    send(data: any | null, status: number | null, type: string | null): void;
+    end(...args: any[]): void;
     /* events */
     emit(event: string, ...args: any[]): boolean;
 }

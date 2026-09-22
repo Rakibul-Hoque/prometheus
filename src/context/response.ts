@@ -1,49 +1,48 @@
-import { getMimeType } from "../mime";
+import { getMimeType, getReverseMimeType } from "../mime";
 import type { Response } from "./types";
 
 export const responsePrototype: Partial<Response> = {
     get status() {
-        return this.res.statusCode;
+        return this._statusCode ?? 200;
     },
     set status(code: number) {
-        this.res.statusCode = code;
+        this._statusCode = code;
+    },
+
+    get body() {
+        return this._body;
+    },
+    set body(v) {
+        this._body = v;
     },
 
     get type() {
-        return this.res.getHeader("Content-Type") as string;
+        return this.get("Content-Type");
     },
-
     set type(value: string) {
         const mime = getMimeType(value) || value;
         this.set("Content-Type", mime);
     },
 
-    set(nameOrHeaders: string | Record<string, string>, value?: string) {
-        if (typeof nameOrHeaders === "object" && nameOrHeaders !== null) {
-            for (const [key, val] of Object.entries(nameOrHeaders)) {
-                this.res.setHeader(key, val);
-            }
-        } else if (typeof nameOrHeaders === "string" && value !== undefined) {
-            this.res.setHeader(nameOrHeaders, value);
+    get(name: string) {
+        return this.headers.get(name);
+    },
+    set(nameOrHeaders: any, value?: string) {
+        if (typeof nameOrHeaders === "object") {
+            for (const [k, v] of Object.entries(nameOrHeaders))
+                this.headers.set(k, v as string);
+        } else if (value) {
+            this.headers.set(nameOrHeaders, value);
         }
     },
-
     append(name: string, value: string) {
-        const prev = this.res.getHeader(name);
-        if (!prev) this.res.setHeader(name, value);
-        else if (Array.isArray(prev))
-            this.res.setHeader(name, [...prev, value]);
-        else this.res.setHeader(name, [String(prev), value]);
+        const prev = this.headers.get(name);
+        if (!prev) this.headers.set(name, value);
+        else if (Array.isArray(prev)) this.headers.set(name, [...prev, value]);
+        else this.headers.set(name, [String(prev), value]);
     },
 
     remove(name: string) {
-        this.res.removeHeader(name);
+        this.headers.delete(name);
     },
-
-    redirect(url: string, status = 302) {
-        this.status = status;
-        this.set("Location", url);
-        this._execState._redirect___ = true; 
-        this.end()
-    }
 };

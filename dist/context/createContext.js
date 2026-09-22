@@ -1,0 +1,32 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createContext = createContext;
+const request_1 = require("./request");
+const response_1 = require("./response");
+const utils_1 = require("./utils");
+const baseContext_1 = require("./baseContext");
+async function createContext(reqCtx, app) {
+    const url = new URL(reqCtx.url || "/", `http://${reqCtx.host || "localhost"}`);
+    const ctx = Object.create(baseContext_1.baseContextPrototype);
+    const request = Object.create(request_1.requestPrototype);
+    const response = Object.create(response_1.responsePrototype);
+    ctx.rootApp = app;
+    ctx.appStack = [];
+    ctx._responded___ = false;
+    ctx._execState = { _isRouteFound___: false, _redirect___: false };
+    ctx.state = Object.create(null);
+    request.method = reqCtx.method || "GET";
+    request.url = reqCtx.url || "/";
+    request.path = url.pathname;
+    request.headers = reqCtx.headers || {};
+    request.remoteAddress = reqCtx.remoteAddress;
+    request.query = (0, utils_1.searchParamsToObject)(url.searchParams);
+    request.params = {};
+    request.body = reqCtx.body;
+    response._body = undefined;
+    response._statusCode = 200;
+    response.headers = new Map();
+    ctx.request = request;
+    ctx.response = response;
+    return ctx;
+}

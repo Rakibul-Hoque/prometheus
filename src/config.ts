@@ -5,6 +5,7 @@ import { errorBoundary } from "./middleware/error-boundary";
 import { notFound } from "./middleware/not-found";
 import { defaultOnErrorHandler, defaultOnNotFoundHandler } from "./errors";
 
+
 export const defaultOptions: Required<AppOptions> = {
     errorBoundary: true,
     bodyParser: true,

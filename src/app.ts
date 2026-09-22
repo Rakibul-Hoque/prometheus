@@ -1,5 +1,3 @@
-import http from "http";
-import { create_mock } from "./mock_test";
 import type {
     Middleware,
     LayerMiddleware,
@@ -10,15 +8,17 @@ import type {
     NotFoundHandler,
     StackType
 } from "./types";
+import type { AppOptions } from "./config";
+
 import { App as BaseApp } from "./types";
 import { baseContextPrototype } from "./context/baseContext";
 import { createContext } from "./context/createContext";
 import { compile, compileApp, compose } from "./compose";
-import { respond } from "./respond";
-import type { AppOptions } from "./config";
+import { finalParser } from "./final-parser";
 import { defaultOptions, installSystem } from "./config";
 import { RadixRouter } from "./radix_router";
 import { joinPaths } from "./util";
+import { createNodeServer } from "./adepter";
 
 export class App extends BaseApp {
     parent: App | null = null;
@@ -206,36 +206,27 @@ export class App extends BaseApp {
             );
         }
     }
-
-    handler() {
+    handler(): RequestHandler {
         if (this._handler) return this._handler;
         this._started = true;
         const appMiddleware = compile(this);
+
         const requestMiddleware = compose([
             ...this.systemPre,
             appMiddleware,
             ...this.systemPost
         ]);
+        this._handler = async reqCtx => {
+            const ctx = await createContext(reqCtx, this);
 
-        this._handler = async (req, res) => {
-            const ctx = await createContext(req, res, this);
-            try {
-                await requestMiddleware(ctx);
-            } finally {
-                await respond(ctx);
-            }
+            await requestMiddleware(ctx);
+            await finalParser(ctx);
+            return ctx;
         };
-
         return this._handler;
     }
 
     listen(port: number, callback?: () => void) {
-        const server = http.createServer(this.handler());
-        server.listen(port, callback);
-        return server;
-    }
-
-    createMock() {
-        return create_mock(this);
+        return createNodeServer(this, port, callback);
     }
 }
