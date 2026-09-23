@@ -2,6 +2,7 @@ export { EventEmitter } from "./events";
 import { EventEmitter } from "./events";
 
 export type { Context } from "./context/types";
+import type { Context } from "./context/types";
 import { IncomingMessage, ServerResponse } from "http";
 
 export type Next = () => Promise<void>;

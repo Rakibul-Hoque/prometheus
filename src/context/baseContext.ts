@@ -3,10 +3,9 @@ import fsp from "fs/promises";
 import fs from "fs";
 import { getMimeType } from "../mime";
 import { EventEmitter } from "../events";
-
 import type { Context } from "./types";
 
-export const baseContextPrototype: Partial<Context> = {
+export const baseContextPrototype: Context = {
     get method() {
         return this.request.method;
     },
@@ -117,3 +116,5 @@ export const baseContextPrototype: Partial<Context> = {
         else this._responded___ = true;
     }
 };
+
+//as Partial<>;

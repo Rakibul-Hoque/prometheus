@@ -1,26 +1,26 @@
 {
-  "compilerOptions": {
-    /* File Layout */
-    "rootDir": "./src",
-    "outDir": "./dist",
+    "compilerOptions": {
+        /* File Layout */
+        "rootDir": "./src",
+        "outDir": "./dist",
 
-    /* Module & Environment Settings */
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "lib": ["ES2022"],
-    "types": ["node"],
-    "esModuleInterop": true,
+        /* Module & Environment Settings */
+        "target": "ES2022",
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "lib": ["ES2022"],
+        "types": ["node"],
+        "esModuleInterop": true,
 
-    /* Strict Type-Checking */
-    "strict": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+        /* Strict Type-Checking */
+        "strict": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
 
-    /* Emit & Module Options */
-    "skipLibCheck": true
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+        /* Emit & Module Options */
+        "skipLibCheck": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist"]
 }

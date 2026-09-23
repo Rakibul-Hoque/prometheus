@@ -4,22 +4,26 @@ exports.requestPrototype = void 0;
 const mime_1 = require("../mime");
 exports.requestPrototype = {
     get(name) {
-        return this.headers[name.toLowerCase()];
+        const val = this.headers[name.toLowerCase()];
+        if (Array.isArray(val))
+            return val[0];
+        return val;
     },
     get type() {
-        const raw_type = this.get("Content-Type")
+        const raw = this.get("content-type")
             ?.split(";")[0]
             .trim()
             .toLowerCase();
-        return (0, mime_1.getReverseMimeType)(raw_type);
+        return raw ? (0, mime_1.getReverseMimeType)(raw) : undefined;
     },
     get typeRaw() {
         return this.get("Content-Type")?.split(";")[0].trim();
     },
     get ip() {
-        const xfwd = this.headers["X-Forwarded-For"];
-        return typeof xfwd === "string"
-            ? xfwd.split(",")[0].trim()
+        const xfwd = this.headers["x-forwarded-for"];
+        const val = Array.isArray(xfwd) ? xfwd[0] : xfwd;
+        return typeof val === "string"
+            ? val.split(",")[0].trim()
             : this.remoteAddress;
     },
     is(type) {
@@ -28,18 +32,14 @@ exports.requestPrototype = {
     },
     get cookies() {
         const cookieString = this.get("cookie");
-        if (cookieString) {
-            const cookies = {};
-            cookieString
-                .split(";")
-                .map(c => c.trim())
-                .map(c => {
-                const pair = c.split("=").map(p => p.trim());
-                if (pair.length == 2)
-                    cookies[pair[0]] = pair[1];
-            });
-            return cookies;
-        }
-        return undefined;
+        if (!cookieString)
+            return undefined;
+        const cookies = {};
+        cookieString.split(";").forEach(c => {
+            const [k, ...rest] = c.trim().split("=");
+            if (k)
+                cookies[k] = decodeURIComponent(rest.join("="));
+        });
+        return cookies;
     }
 };

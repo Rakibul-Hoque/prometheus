@@ -1,4 +1,8 @@
-export class EventEmitter {
+
+
+import type {AppType} from "./types"
+
+export class EventEmitter implements AppType {
     private events = {};
 
     on(event: string, fn: any): void {

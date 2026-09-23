@@ -111,3 +111,4 @@ exports.baseContextPrototype = {
             this._responded___ = true;
     }
 };
+//as Partial<>;

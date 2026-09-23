@@ -18,7 +18,7 @@ async function parseRequestBody(req) {
 }
 async function createRequestContext(req) {
     const xfwd = req.headers["x-forwarded-for"];
-    const remoteAddress = typeof xfwd === "string"
+    const remoteAddress = xfwd && typeof xfwd === "string"
         ? xfwd.split(",")[0].trim()
         : req.socket.remoteAddress || "";
     const host = req.headers.host || "localhost";

@@ -16,34 +16,36 @@ exports.responsePrototype = {
         this._body = v;
     },
     get type() {
-        return this.get("Content-Type");
+        return this.get("content-type");
     },
     set type(value) {
         const mime = (0, mime_1.getMimeType)(value) || value;
         this.set("Content-Type", mime);
     },
     get(name) {
-        return this.headers.get(name);
+        return this.headers.get(name.toLowerCase());
     },
     set(nameOrHeaders, value) {
         if (typeof nameOrHeaders === "object") {
-            for (const [k, v] of Object.entries(nameOrHeaders))
-                this.headers.set(k, v);
+            for (const [k, v] of Object.entries(nameOrHeaders)) {
+                this.headers.set(k.toLowerCase(), v);
+            }
         }
-        else if (value) {
-            this.headers.set(nameOrHeaders, value);
+        else if (value !== undefined) {
+            this.headers.set(nameOrHeaders.toLowerCase(), value);
         }
     },
     append(name, value) {
-        const prev = this.headers.get(name);
+        const key = name.toLowerCase();
+        const prev = this.headers.get(key);
         if (!prev)
-            this.headers.set(name, value);
+            this.headers.set(key, value);
         else if (Array.isArray(prev))
-            this.headers.set(name, [...prev, value]);
+            this.headers.set(key, [...prev, value]);
         else
-            this.headers.set(name, [String(prev), value]);
+            this.headers.set(key, [prev, value]);
     },
     remove(name) {
-        this.headers.delete(name);
-    },
+        this.headers.delete(name.toLowerCase());
+    }
 };
