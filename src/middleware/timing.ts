@@ -1,6 +1,6 @@
 import type { Context, Next } from "../types";
 
-export async function timing(ctx:const, next:Next) {
+export async function timing(ctx:Context, next:Next) {
     const start = process.hrtime.bigint();
     await next();
     const end = process.hrtime.bigint();

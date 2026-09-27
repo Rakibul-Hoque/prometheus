@@ -1,5 +1,6 @@
 import http, { IncomingMessage, ServerResponse } from "http";
-import { App } from "../app";
+import { App } from "../types";
+import type { Err } from "../types";
 import type { Context, RequestContext } from "../context/types";
 import { Stream } from "stream";
 
@@ -11,13 +12,28 @@ async function parseRequestBody(req: IncomingMessage): Promise<Buffer | null> {
     return Buffer.concat(chunks);
 }
 
+function handleError(err: Err, res: ServerResponse): void {
+    console.error("adapter error", err);
+    if (!res.writableEnded) {
+        res.statusCode = err?.status || 500;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(
+            JSON.stringify({
+                error: err.message || "Internal Server Error",
+                status: res.statusCode
+            })
+        );
+    }
+    throw err;
+}
+
 async function createRequestContext(
     req: IncomingMessage
 ): Promise<RequestContext> {
     const xfwd = req.headers["x-forwarded-for"];
     const remoteAddress =
-      xfwd &&  typeof xfwd === "string"
-            ? xfwd.split(",")[0].trim()
+        xfwd && typeof xfwd === "string"
+            ? xfwd.split(",")[0]?.trim()
             : req.socket.remoteAddress || "";
 
     const host = req.headers.host || "localhost";
@@ -33,7 +49,8 @@ async function createRequestContext(
     };
 }
 
-async function respond(ctx: Context, res: ServerResponse) {
+async function respond(ctx: Context | undefined, res: ServerResponse) {
+    if (ctx === undefined) throw new Error("Context is undefined ");
     if (res.writableEnded) return;
 
     res.statusCode = ctx.status || ctx.response.status || 200;
@@ -62,11 +79,9 @@ async function respond(ctx: Context, res: ServerResponse) {
     }
 
     if (body instanceof Stream) {
-        
         body.pipe(res);
         return;
     }
-    
 
     res.end(body);
 }
@@ -85,21 +100,7 @@ export function createNodeServer(
                 ctx = await handler(reqCtx);
                 await respond(ctx, res);
             } catch (err: any) {
-                console.error("adapter error", err);
-                if (!res.writableEnded) {
-                    res.statusCode = err.status || 500;
-                    res.setHeader(
-                        "Content-Type",
-                        "application/json; charset=utf-8"
-                    );
-                    res.end(
-                        JSON.stringify({
-                            error: err.message || "Internal Server Error",
-                            status: res.statusCode
-                        })
-                    );
-                }
-                throw err;
+                handleError(err, res);
             }
         }
     );

@@ -1,6 +1,7 @@
 import http from "http";
 import https from "https";
 import { URL } from "url";
+import type { Middleware } from "../types";
 
 function proxyRequest(
     req: http.IncomingMessage,
@@ -35,7 +36,7 @@ function proxyRequest(
 }
 
 export function proxy(target: string): Middleware {
-    return async ctx => {
+    return async (ctx : any)=> {
         proxyRequest(ctx.req, ctx.res, target);
         ctx._respond___ = false; // IMPORTANT: prevent normal response
     };

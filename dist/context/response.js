@@ -16,36 +16,40 @@ exports.responsePrototype = {
         this._body = v;
     },
     get type() {
-        return this.get("content-type");
+        const self = this;
+        return self.headers?.get("content-type");
     },
     set type(value) {
+        const self = this;
         const mime = (0, mime_1.getMimeType)(value) || value;
-        this.set("Content-Type", mime);
+        self.headers.set("content-type", mime);
     },
     get(name) {
         return this.headers.get(name.toLowerCase());
     },
     set(nameOrHeaders, value) {
+        const self = this;
         if (typeof nameOrHeaders === "object") {
             for (const [k, v] of Object.entries(nameOrHeaders)) {
-                this.headers.set(k.toLowerCase(), v);
+                self.headers.set(k.toLowerCase(), v);
             }
         }
         else if (value !== undefined) {
-            this.headers.set(nameOrHeaders.toLowerCase(), value);
+            self.headers.set(nameOrHeaders.toLowerCase(), value);
         }
     },
     append(name, value) {
+        const self = this;
         const key = name.toLowerCase();
-        const prev = this.headers.get(key);
+        const prev = self.headers.get(key);
         if (!prev)
-            this.headers.set(key, value);
+            self.headers.set(key, value);
         else if (Array.isArray(prev))
-            this.headers.set(key, [...prev, value]);
+            self.headers.set(key, [...prev, value]);
         else
-            this.headers.set(key, [prev, value]);
+            self.headers.set(key, [prev, value]);
     },
     remove(name) {
         this.headers.delete(name.toLowerCase());
-    }
+    },
 };

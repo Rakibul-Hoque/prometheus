@@ -8,7 +8,7 @@ export const bodyParser: Middleware = async (ctx, next) => {
     return next();
   }
 
-  const contentType = ctx.get("Content-Type")?.split(";")[0].trim().toLowerCase();
+  const contentType = ctx.get("Content-Type")?.split(";")[0]?.trim().toLowerCase();
 
   try {
     switch (contentType) {

@@ -1,12 +1,14 @@
 import type {
     Middleware,
-    Context,
     LayerMiddleware,
+    ComposedMiddleware,
+    Context,
     App,
-    Handler
+    Handler,
+    Route
 } from "./types";
 
-export function compose(middleware: readonly Middleware[]): Middleware {
+export function compose(middleware: readonly Middleware[]): ComposedMiddleware {
     return async function composed(
         ctx: Context,
         next?: () => Promise<void>
@@ -49,7 +51,7 @@ function compileRoute(route: Route): void {
     ]);
 }
 
-export function compileApp(app: App): Middleware {
+export function compileApp(app: App): ComposedMiddleware {
     const chain: Middleware[] = [];
 
     let pendingRoutes: Route[] = [];
@@ -80,7 +82,7 @@ export function compileApp(app: App): Middleware {
             }
 
             ctx.params = result.params;
-            ctx._execState._isRouteFound___  = true;
+            ctx._execState._isRouteFound___ = true;
             await result.route.execute!(ctx);
         });
 

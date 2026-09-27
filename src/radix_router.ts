@@ -119,7 +119,7 @@ export class RadixRouter {
 
         const values: string[] = [];
         const result = this.search(this.root, segments, 0, methodUpper, values);
-        
+
         if (result && this.cache.size < this.maxCacheSize) {
             this.cache.set(cacheKey, {
                 route: result.route,
@@ -140,24 +140,18 @@ export class RadixRouter {
     ): RouteMatch | null {
         if (index === segments.length) {
             const route = node.handlers.get(method);
-
-            if (!route) {
-                return null;
-            }
+            if (!route) return null;
 
             const params: Record<string, string> = {};
-
             route.paramNames.forEach((name, i) => {
-                params[name] = values[i];
+                const value = values[i];
+                if (value !== undefined) params[name] = value;
             });
-
-            return {
-                route,
-                params
-            };
+            return { route, params };
         }
 
         const segment = segments[index];
+        if (segment === undefined) return null; 
 
         const staticChild = node.children.get(segment);
         if (staticChild) {
@@ -166,16 +160,13 @@ export class RadixRouter {
                 segments,
                 index + 1,
                 method,
-               values
+                values
             );
-            if (result) {
-                return result;
-            }
+            if (result) return result;
         }
 
         if (node.paramChild) {
             values.push(segment);
-
             const result = this.search(
                 node.paramChild,
                 segments,
@@ -183,34 +174,25 @@ export class RadixRouter {
                 method,
                 values
             );
-
-            if (result) {
-                return result;
-            }
-
+            if (result) return result;
             values.pop();
         }
 
         if (node.wildcardChild) {
             const wildcardValue = segments.slice(index).join("/");
-
             const route = node.wildcardChild.handlers.get(method);
 
             if (route) {
                 const params: Record<string, string> = {};
-
                 route.paramNames.forEach((name, i) => {
-                    params[name] = values[i];
+                    const value = values[i];
+                    if (value !== undefined) params[name] = value;
                 });
-
                 params["*"] = wildcardValue;
-
-                return {
-                    route,
-                    params
-                };
+                return { route, params };
             }
         }
+
         return null;
     }
     clearCache(): void {

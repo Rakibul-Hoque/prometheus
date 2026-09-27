@@ -29,7 +29,6 @@ function cors(options = {}) {
         if (maxAge) {
             ctx.set("Access-Control-Max-Age", String(maxAge));
         }
-        // Handle preflight
         if (ctx.method === "OPTIONS") {
             ctx.status = 204;
             ctx.body = null;

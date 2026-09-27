@@ -15,6 +15,9 @@ exports.baseContextPrototype = {
     get path() {
         return this.request.path;
     },
+    get url() {
+        return this.request.url;
+    },
     get headers() {
         return this.request.headers;
     },
@@ -55,29 +58,37 @@ exports.baseContextPrototype = {
         return this.request.get(name);
     },
     set(nameOrHeaders, value) {
-        this.response.set(nameOrHeaders, value);
+        const self = this;
+        if (value === undefined)
+            self.response.set(nameOrHeaders);
+        else
+            self.response.set(nameOrHeaders, value);
     },
     get currentApp() {
-        return this.appStack[this.appStack.length - 1] ?? this.app;
+        const self = this;
+        return self.appStack[self.appStack.length - 1] ?? self.app;
     },
     get responded() {
         return this._responded___ === true;
     },
     async readFile(path, setType = true) {
+        const self = this;
         if (setType)
-            this.type = (0, mime_1.getMimeType)(path) || "application/octet-stream";
+            self.type = (0, mime_1.getMimeType)(path) || "application/octet-stream";
         return await promises_1.default.readFile(path);
     },
     readStream(path, setType = true) {
+        const self = this;
         if (setType)
-            this.type = (0, mime_1.getMimeType)(path) || "application/octet-stream";
+            self.type = (0, mime_1.getMimeType)(path) || "application/octet-stream";
         return fs_1.default.createReadStream(path);
     },
     redirect(url, status = 302) {
-        this.status = status;
-        this.set("Location", url);
-        this._execState._redirect___ = true;
-        this.end();
+        const self = this;
+        self.status = status;
+        self.set("Location", url);
+        self._execState._redirect___ = true;
+        self.end();
     },
     assert(condition, message, status = 400) {
         if (!condition)
@@ -87,28 +98,30 @@ exports.baseContextPrototype = {
         return this.currentApp.emit(event, ...args);
     },
     throw(status, message) {
+        const self = this;
         const err = new Error(message || http_1.default.STATUS_CODES[status] || "Error");
         err.status = status;
         err.expose = status < 500;
-        err.app = this.currentApp;
+        err.app = self.currentApp;
         throw err;
     },
     send(data = null, status = null, type = null) {
-        if (this._responded___)
+        const self = this;
+        if (self._responded___)
             return;
         if (data !== null && data !== undefined)
-            this.body = data;
+            self.body = data;
         if (status !== null && status !== undefined)
-            this.status = status;
+            self.status = status;
         if (type)
-            this.type = type;
-        this._responded___ = true;
+            self.type = type;
+        self._responded___ = true;
     },
     end(...args) {
+        const self = this;
         if (args.length > 0)
-            this.send(...args);
+            self.send(...args);
         else
-            this._responded___ = true;
+            self._responded___ = true;
     }
 };
-//as Partial<>;

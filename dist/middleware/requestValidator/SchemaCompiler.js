@@ -105,9 +105,6 @@ const runtime = {
 class SchemaCompiler {
     static compile(schema, options = {}) {
         this.checkSchema(schema);
-        /*
-         * Filtering is enabled by default.
-         */
         const filter = {
             body: options.filter?.body ?? true,
             params: options.filter?.params ?? true,
@@ -231,9 +228,6 @@ class SchemaCompiler {
     }
     static compileFilterNested(rules, value) {
         let code = "";
-        /*
-         * Nested object
-         */
         if (rules.schema) {
             const allowedFields = Object.keys(rules.schema);
             code += `
@@ -266,9 +260,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Array
-         */
         if (rules.items) {
             code += `
                 if (Array.isArray(${value})) {
@@ -302,9 +293,6 @@ class SchemaCompiler {
         const value = `${root}[${JSON.stringify(field)}]`;
         const message = rules.message ?? {};
         let code = "";
-        /*
-         * Default
-         */
         if (rules.default !== undefined) {
             let defaultExpression;
             if (typeof rules.default === "function") {
@@ -330,9 +318,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Required
-         */
         let requiredExpression = "false";
         if (typeof rules.required === "function") {
             requiredExpression = `(${rules.required.toString()})(${root})`;
@@ -356,9 +341,6 @@ class SchemaCompiler {
                 );
             }
         `;
-        /*
-         * Existing value
-         */
         code += `
             if (${value} !== undefined) {
         `;
@@ -396,9 +378,6 @@ class SchemaCompiler {
     }
     static compileConstraints(source, field, path, value, rules, message, root) {
         let code = "";
-        /*
-         * Enum
-         */
         if (rules.enum) {
             code += `
                 if (
@@ -422,9 +401,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * minLength
-         */
         if (rules.minLength !== undefined) {
             code += `
                 if (
@@ -443,9 +419,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * maxLength
-         */
         if (rules.maxLength !== undefined) {
             code += `
                 if (
@@ -464,9 +437,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Pattern
-         */
         if (rules.pattern !== undefined) {
             const pattern = rules.pattern instanceof RegExp
                 ? rules.pattern.source
@@ -490,9 +460,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * min
-         */
         if (rules.min !== undefined) {
             code += `
                 if (
@@ -511,9 +478,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * max
-         */
         if (rules.max !== undefined) {
             code += `
                 if (
@@ -532,9 +496,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Array items
-         */
         if (rules.items) {
             code += `
                 if (Array.isArray(${value})) {
@@ -550,9 +511,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Nested object
-         */
         if (rules.schema) {
             code += `
                 if (
@@ -568,9 +526,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Custom validator
-         */
         if (rules.validate) {
             const validator = rules.validate.validator.toString();
             const customMessage = rules.validate.message ??
@@ -605,9 +560,6 @@ class SchemaCompiler {
     static compileNestedField(source, field, path, value, rules, cast, root) {
         const message = rules.message ?? {};
         let code = "";
-        /*
-         * Default
-         */
         if (rules.default !== undefined) {
             let defaultExpression;
             if (typeof rules.default === "function") {
@@ -622,9 +574,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Type / casting
-         */
         if (rules.type) {
             code += `
                 if (${value} !== undefined) {
@@ -668,9 +617,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Required
-         */
         const required = typeof rules.required === "function"
             ? `(${rules.required.toString()})(${root})`
             : rules.required === true
@@ -696,9 +642,6 @@ class SchemaCompiler {
     }
     static compileNestedConstraints(source, field, path, value, rules, message, cast, root) {
         let code = "";
-        /*
-         * Enum
-         */
         if (rules.enum) {
             code += `
                 if (
@@ -722,9 +665,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * min
-         */
         if (rules.min !== undefined) {
             code += `
                 if (
@@ -743,9 +683,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * max
-         */
         if (rules.max !== undefined) {
             code += `
                 if (
@@ -764,9 +701,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * minLength
-         */
         if (rules.minLength !== undefined) {
             code += `
                 if (
@@ -786,9 +720,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * maxLength
-         */
         if (rules.maxLength !== undefined) {
             code += `
                 if (
@@ -808,9 +739,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Pattern
-         */
         if (rules.pattern !== undefined) {
             const pattern = rules.pattern instanceof RegExp
                 ? rules.pattern.source
@@ -834,9 +762,6 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Custom validator
-         */
         if (rules.validate) {
             const validator = rules.validate.validator.toString();
             const customMessage = rules.validate.message ??
@@ -866,17 +791,11 @@ class SchemaCompiler {
                 }
             `;
         }
-        /*
-         * Nested object
-         */
         if (rules.schema) {
             for (const [childField, childRules] of Object.entries(rules.schema)) {
                 code += this.compileNestedField(source, `${field}.${childField}`, `${path}.${childField}`, `${value}[${JSON.stringify(childField)}]`, childRules, cast, value);
             }
         }
-        /*
-         * Array items
-         */
         if (rules.items) {
             code += `
                 if (Array.isArray(${value})) {
@@ -925,15 +844,9 @@ class SchemaCompiler {
                 rules.type !== "integer") {
                 throw new Error(`${fieldPath}: min/max can only be used with number or integer fields`);
             }
-            /*
-             * Recursively validate nested schemas.
-             */
             if (rules.schema) {
                 this.checkFields(rules.schema, source, fieldPath);
             }
-            /*
-             * Validate array item rules.
-             */
             if (rules.items) {
                 this.checkField(rules.items, source, `${fieldPath}[i]`);
             }

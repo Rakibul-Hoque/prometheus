@@ -10,7 +10,7 @@ const bodyParser = async (ctx, next) => {
     if (raw == null) {
         return next();
     }
-    const contentType = ctx.get("Content-Type")?.split(";")[0].trim().toLowerCase();
+    const contentType = ctx.get("Content-Type")?.split(";")[0]?.trim().toLowerCase();
     try {
         switch (contentType) {
             case "application/json": {

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.App = void 0;
-const types_1 = require("./types");
+const events_1 = require("./events");
 const baseContext_1 = require("./context/baseContext");
 const createContext_1 = require("./context/createContext");
 const compose_1 = require("./compose");
@@ -10,7 +10,7 @@ const config_1 = require("./config");
 const radix_router_1 = require("./radix_router");
 const util_1 = require("./util");
 const adepter_1 = require("./adepter");
-class App extends types_1.App {
+class App extends events_1.EventEmitter {
     parent = null;
     _handler = null;
     stack = [];
@@ -40,16 +40,16 @@ class App extends types_1.App {
     }
     register(plugin, opts) {
         this._assertMutable();
-        const childPrefix = (0, util_1.joinPaths)(this.prefix, opts?.prefix ?? "");
+        const prefix = typeof opts === "string"
+            ? opts
+            : (opts?.prefix ?? "");
+        const childPrefix = (0, util_1.joinPaths)(this.prefix, prefix);
         const child = new App(this.options);
         child.parent = this;
         child.prefix = childPrefix;
         this._inheritDecoratorsToChild(child);
-        this.stack.push({
-            type: "child",
-            item: child
-        });
-        plugin(child, opts || {});
+        this.stack.push({ type: "child", item: child });
+        plugin(child, (opts ?? {}));
         return this;
     }
     _inheritDecoratorsToChild(child) {
@@ -87,13 +87,11 @@ class App extends types_1.App {
             method: method.toUpperCase(),
             path: fullPath,
             middleware,
-            handler
+            handler,
+            paramNames: []
         };
         this.router.add(route);
-        this.stack.push({
-            type: "route",
-            item: route
-        });
+        this.stack.push({ type: "route", item: route });
         return this;
     }
     decorate(name, value) {

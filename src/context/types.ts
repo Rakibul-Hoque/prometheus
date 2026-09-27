@@ -6,7 +6,7 @@ export interface RequestContext {
     method: string;
     url: string;
     body: Buffer | null;
-    remoteAddress: string;
+    remoteAddress: string | undefined;
     host: string;
     port: number;
 }
@@ -17,8 +17,8 @@ export interface Request {
     url: string;
     path: string;
     headers: Record<string, string | string[] | undefined>;
-    query: Record<string, string>;
-    params: Record<string, string>;
+    query:  Record<string, string | number | number[] | string[]>;
+    params: Record<string, string | number>;
     body: any;
     remoteAddress: string;
 
@@ -72,8 +72,8 @@ export interface Context {
     path: string;
     url: string;
     headers: Record<string, string | string[] | undefined>;
-    query: Record<string, string>;
-    params: Record<string, string>;
+    query:  Record<string, string | number | number[] | string[]>;
+    params: Record<string, string | number>;
     body: any;
     status: number;
     type?: string;

@@ -1,41 +1,39 @@
 import type {
     Middleware,
-    LayerMiddleware,
     Plugin,
     Handler,
-    Context,
-    ErrorHandler,
-    NotFoundHandler,
-    StackType
+    RequestHandler,
+    StackType,
+    Route,
+    LayerMiddleware
 } from "./types";
-import type { AppOptions } from "./config";
+import type { AppOptions, ResolvedAppOptions } from "./types";
 
-import { App as BaseApp } from "./types";
+import { EventEmitter } from "./events";
 import { baseContextPrototype } from "./context/baseContext";
 import { createContext } from "./context/createContext";
-import { compile, compileApp, compose } from "./compose";
+import { compile, compose } from "./compose";
 import { finalParser } from "./final-parser";
 import { defaultOptions, installSystem } from "./config";
 import { RadixRouter } from "./radix_router";
 import { joinPaths } from "./util";
 import { createNodeServer } from "./adepter";
 
-export class App extends BaseApp {
+export class App extends EventEmitter {
     parent: App | null = null;
-    _handler = null;
+    _handler: RequestHandler | null = null;
     stack: StackType = [];
-    router = new RadixRouter();
+    router: RadixRouter = new RadixRouter();
     _decorators = new Map<string, any>();
     _contextDecorators = new Map<string, any>();
     systemPre: Middleware[] = [];
     systemPost: Middleware[] = [];
     prefix: string = "";
-    options: Required<AppOptions>;
+    options: ResolvedAppOptions;
     private _started = false;
 
     constructor(options: AppOptions = {}) {
         super();
-
         this.options = { ...defaultOptions, ...options };
         installSystem(this, this.options);
     }
@@ -45,33 +43,33 @@ export class App extends BaseApp {
 
         const list = Array.isArray(fn) ? fn : [fn];
         for (const middleware of list) {
-            const layer = {
+            const layer: LayerMiddleware = {
                 fn: middleware,
                 prefix: this.prefix + prefix
             };
-
             this.stack.push({ type: "middleware", item: layer });
         }
     }
 
-    register<T>(plugin: Plugin<T>, opts?: T) {
+    register<T = any>(plugin: Plugin<T>, opts?: T | { prefix?: string }): this {
         this._assertMutable();
 
-        const childPrefix = joinPaths(this.prefix, opts?.prefix ?? "");
+        const prefix =
+            typeof opts === "string"
+                ? opts
+                : ((opts as { prefix?: string } | undefined)?.prefix ?? "");
+
+        const childPrefix = joinPaths(this.prefix, prefix);
 
         const child = new App(this.options);
-
         child.parent = this;
         child.prefix = childPrefix;
 
         this._inheritDecoratorsToChild(child);
 
-        this.stack.push({
-            type: "child",
-            item: child
-        });
+        this.stack.push({ type: "child", item: child });
 
-        plugin(child, opts || ({} as T));
+        plugin(child, (opts ?? ({} as T)) as T);
         return this;
     }
 
@@ -107,7 +105,7 @@ export class App extends BaseApp {
         method: string,
         path: string,
         handlers: (Middleware | Handler)[]
-    ) {
+    ): this {
         this._assertMutable();
         if (handlers.length === 0) {
             throw new Error(`${method} ${path}: route requires a handler`);
@@ -121,13 +119,11 @@ export class App extends BaseApp {
             method: method.toUpperCase(),
             path: fullPath,
             middleware,
-            handler
+            handler,
+            paramNames: []
         };
         this.router.add(route);
-        this.stack.push({
-            type: "route",
-            item: route
-        });
+        this.stack.push({ type: "route", item: route });
         return this;
     }
 
@@ -181,7 +177,7 @@ export class App extends BaseApp {
         if (!(name in baseContextPrototype)) {
             Object.defineProperty(baseContextPrototype, name, {
                 get() {
-                    const currentApp = this.currentApp;
+                    const currentApp = (this as any).currentApp as App | null;
                     if (!currentApp) return undefined;
 
                     let app: App | null = currentApp;
@@ -206,9 +202,11 @@ export class App extends BaseApp {
             );
         }
     }
+
     handler(): RequestHandler {
         if (this._handler) return this._handler;
         this._started = true;
+
         const appMiddleware = compile(this);
 
         const requestMiddleware = compose([
@@ -216,13 +214,14 @@ export class App extends BaseApp {
             appMiddleware,
             ...this.systemPost
         ]);
+
         this._handler = async reqCtx => {
             const ctx = await createContext(reqCtx, this);
-
             await requestMiddleware(ctx);
             await finalParser(ctx);
             return ctx;
         };
+
         return this._handler;
     }
 

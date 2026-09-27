@@ -112,32 +112,30 @@ class RadixRouter {
     search(node, segments, index, method, values) {
         if (index === segments.length) {
             const route = node.handlers.get(method);
-            if (!route) {
+            if (!route)
                 return null;
-            }
             const params = {};
             route.paramNames.forEach((name, i) => {
-                params[name] = values[i];
+                const value = values[i];
+                if (value !== undefined)
+                    params[name] = value;
             });
-            return {
-                route,
-                params
-            };
+            return { route, params };
         }
         const segment = segments[index];
+        if (segment === undefined)
+            return null;
         const staticChild = node.children.get(segment);
         if (staticChild) {
             const result = this.search(staticChild, segments, index + 1, method, values);
-            if (result) {
+            if (result)
                 return result;
-            }
         }
         if (node.paramChild) {
             values.push(segment);
             const result = this.search(node.paramChild, segments, index + 1, method, values);
-            if (result) {
+            if (result)
                 return result;
-            }
             values.pop();
         }
         if (node.wildcardChild) {
@@ -146,13 +144,12 @@ class RadixRouter {
             if (route) {
                 const params = {};
                 route.paramNames.forEach((name, i) => {
-                    params[name] = values[i];
+                    const value = values[i];
+                    if (value !== undefined)
+                        params[name] = value;
                 });
                 params["*"] = wildcardValue;
-                return {
-                    route,
-                    params
-                };
+                return { route, params };
             }
         }
         return null;

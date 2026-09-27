@@ -29,7 +29,7 @@ function buildRequestContext(init: MockInit): RequestContext {
         url = u.pathname + u.search + u.hash;
     }
 
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string | (string | number)[]> = {};
     for (const [k, v] of Object.entries(init.headers ?? {})) {
         headers[k.toLowerCase()] = v;
     }

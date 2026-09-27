@@ -30,6 +30,6 @@ function proxyRequest(req, res, target) {
 function proxy(target) {
     return async (ctx) => {
         proxyRequest(ctx.req, ctx.res, target);
-        ctx._respond___ = false; // IMPORTANT: prevent normal response
+        ctx._respond___ = false;
     };
 }

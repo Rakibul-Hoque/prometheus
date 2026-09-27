@@ -4,42 +4,44 @@ exports.requestPrototype = void 0;
 const mime_1 = require("../mime");
 exports.requestPrototype = {
     get(name) {
-        const val = this.headers[name.toLowerCase()];
+        const self = this;
+        const val = self.headers?.[name.toLowerCase()];
         if (Array.isArray(val))
             return val[0];
         return val;
     },
     get type() {
-        const raw = this.get("content-type")
-            ?.split(";")[0]
-            .trim()
-            .toLowerCase();
+        const self = this;
+        const raw = self.get?.("content-type")?.split(";")[0]?.trim()?.toLowerCase();
         return raw ? (0, mime_1.getReverseMimeType)(raw) : undefined;
     },
     get typeRaw() {
-        return this.get("Content-Type")?.split(";")[0].trim();
+        const self = this;
+        return self.get?.("content-type")?.split(";")[0]?.trim();
     },
     get ip() {
-        const xfwd = this.headers["x-forwarded-for"];
-        const val = Array.isArray(xfwd) ? xfwd[0] : xfwd;
-        return typeof val === "string"
-            ? val.split(",")[0].trim()
-            : this.remoteAddress;
+        const self = this;
+        const xfwd = self.headers?.["x-forwarded-for"];
+        const raw = Array.isArray(xfwd) ? xfwd[0] : xfwd;
+        if (typeof raw === "string")
+            return raw.split(",")[0].trim();
+        return self.remoteAddress;
     },
     is(type) {
-        const ct = this.type;
-        return typeof ct === "string" && ct.includes(type);
+        const self = this;
+        return typeof self.type === "string" && self.type.includes(type);
     },
     get cookies() {
-        const cookieString = this.get("cookie");
+        const self = this;
+        const cookieString = self.get?.("cookie");
         if (!cookieString)
             return undefined;
         const cookies = {};
-        cookieString.split(";").forEach(c => {
+        for (const c of cookieString.split(";")) {
             const [k, ...rest] = c.trim().split("=");
             if (k)
                 cookies[k] = decodeURIComponent(rest.join("="));
-        });
+        }
         return cookies;
-    }
+    },
 };

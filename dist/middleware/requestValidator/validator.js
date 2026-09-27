@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requestValidator = requestValidator;
-const SchemaCompiler_1 = require("./SchemaCompiler");
+const schemaCompiler_1 = require("./schemaCompiler");
 function requestValidator(schema, options = {}) {
-    const validate = SchemaCompiler_1.SchemaCompiler.compile(schema, options);
+    const validate = schemaCompiler_1.SchemaCompiler.compile(schema, options);
     return async (ctx, next) => {
         const result = validate(ctx.request.body, ctx.params, ctx.query);
         if (!result.valid) {

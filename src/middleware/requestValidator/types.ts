@@ -22,8 +22,8 @@ export interface ValidationResult {
 
     data: {
         body: unknown;
-        params: Record<string, unknown>;
-        query: Record<string, unknown>;
+        params: Record<string, string | number>,
+        query: Record<string, string | number | number[] | string[]>
     };
 
     errors: ValidationError[];
@@ -91,8 +91,8 @@ export interface RequestSchema {
 export interface CompiledValidator {
     (
         body: unknown,
-        params: Record<string, unknown>,
-        query: Record<string, unknown>
+        params: Record<string, string | number>,
+        query: Record<string, string | number | number[] | string[]>
     ): ValidationResult;
 }
 

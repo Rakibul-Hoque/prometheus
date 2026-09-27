@@ -1,6 +1,6 @@
-import type { Middleware } from "../types";
+import type { Middleware } from "../../types";
 import type { RequestSchema, RequestValidatorOptions } from "./types";
-import { SchemaCompiler } from "./SchemaCompiler";
+import { SchemaCompiler } from "./schemaCompiler";
 
 export function requestValidator(
     schema: RequestSchema,

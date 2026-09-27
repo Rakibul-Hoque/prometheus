@@ -1,26 +1,17 @@
-export async function parseRequestBody(req: IncomingMessage): Promise<any> {
-  if (req.method === "GET" || req.method === "HEAD") return null;
-
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(chunk);
-  if (!chunks.length) return null;
-
-  const raw = Buffer.concat(chunks)
-
-  return raw;
-}
-
-export function searchParamsToObject(searchParams) {
-  const params = {};
-  for (const [key, value] of searchParams.entries()) {
-    if (params[key] !== undefined) {
-      if (!Array.isArray(params[key])) {
-        params[key] = [params[key]];
-      }
-      params[key].push(value);
-    } else {
-      params[key] = value;
+export function searchParamsToObject(
+    searchParams: URLSearchParams
+): Record<string, string | string[]> {
+    const params: Record<string, string | string[]> = {};
+    for (const [key, value] of searchParams.entries()) {
+        const existing = params[key];
+        if (existing !== undefined) {
+            if (Array.isArray(existing)) existing.push(value);
+            else params[key] = [existing as string, value];
+        } else {
+            params[key] = value;
+        }
     }
-  }
-  return params;
+    return params;
 }
+
+

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createVercelHandler = createVercelHandler;
-const stream_1 = require("stream");
+const node_stream_1 = require("node:stream");
 function getRequestBody(req) {
     if (req.method === "GET" || req.method === "HEAD")
         return null;
@@ -26,10 +26,10 @@ function stripBasePath(url, basePath) {
 function buildRequestContext(req, options) {
     const xfwd = req.headers["x-forwarded-for"];
     const remoteAddress = typeof xfwd === "string"
-        ? xfwd.split(",")[0].trim()
+        ? (xfwd.split(",")[0]?.trim() ?? "")
         : Array.isArray(xfwd)
-            ? xfwd[0]
-            : req.socket?.remoteAddress || "";
+            ? (xfwd[0] ?? "")
+            : (req.socket?.remoteAddress ?? "");
     const host = req.headers.host || "localhost";
     return {
         headers: req.headers,
@@ -42,6 +42,10 @@ function buildRequestContext(req, options) {
     };
 }
 async function sendResponse(ctx, res, isProxy) {
+    if (ctx === undefined)
+        throw new Error("Context is undefined");
+    if (isProxy)
+        return;
     if (res.writableEnded)
         return;
     res.statusCode = ctx.status || ctx.response.status || 200;
@@ -49,8 +53,6 @@ async function sendResponse(ctx, res, isProxy) {
         if (val !== undefined)
             res.setHeader(key, val);
     }
-    if (isProxy)
-        return;
     if (ctx._execState?._redirect___ ||
         (res.statusCode >= 300 && res.statusCode < 400)) {
         res.end();
@@ -61,11 +63,26 @@ async function sendResponse(ctx, res, isProxy) {
         res.end();
         return;
     }
-    if (body instanceof stream_1.Stream) {
+    if (body instanceof node_stream_1.Stream) {
         body.pipe(res);
         return;
     }
     res.end(body);
+}
+function handleError(err, res, options, req) {
+    if (options.onError) {
+        void options.onError(err, req, res);
+        return;
+    }
+    console.error("vercel adapter error", err);
+    if (!res.writableEnded) {
+        res.statusCode = err?.status || 500;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({
+            error: err?.message || "Internal Server Error",
+            status: res.statusCode
+        }));
+    }
 }
 function createVercelHandler(app, options = {}) {
     const handler = app.handler();
@@ -80,19 +97,7 @@ function createVercelHandler(app, options = {}) {
             await sendResponse(ctx, res, isProxy);
         }
         catch (err) {
-            if (options.onError) {
-                options.onError(err, req, res);
-                return;
-            }
-            console.error("vercel adapter error", err);
-            if (!res.writableEnded) {
-                res.statusCode = err?.status || 500;
-                res.setHeader("Content-Type", "application/json; charset=utf-8");
-                res.end(JSON.stringify({
-                    error: err?.message || "Internal Server Error",
-                    status: res.statusCode
-                }));
-            }
+            handleError(err, res, options, req);
         }
     };
 }

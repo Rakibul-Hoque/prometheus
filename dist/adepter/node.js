@@ -16,10 +16,22 @@ async function parseRequestBody(req) {
         return null;
     return Buffer.concat(chunks);
 }
+function handleError(err, res) {
+    console.error("adapter error", err);
+    if (!res.writableEnded) {
+        res.statusCode = err?.status || 500;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({
+            error: err.message || "Internal Server Error",
+            status: res.statusCode
+        }));
+    }
+    throw err;
+}
 async function createRequestContext(req) {
     const xfwd = req.headers["x-forwarded-for"];
     const remoteAddress = xfwd && typeof xfwd === "string"
-        ? xfwd.split(",")[0].trim()
+        ? xfwd.split(",")[0]?.trim()
         : req.socket.remoteAddress || "";
     const host = req.headers.host || "localhost";
     return {
@@ -33,6 +45,8 @@ async function createRequestContext(req) {
     };
 }
 async function respond(ctx, res) {
+    if (ctx === undefined)
+        throw new Error("Context is undefined ");
     if (res.writableEnded)
         return;
     res.statusCode = ctx.status || ctx.response.status || 200;
@@ -69,16 +83,7 @@ function createNodeServer(app, port, callback) {
             await respond(ctx, res);
         }
         catch (err) {
-            console.error("adapter error", err);
-            if (!res.writableEnded) {
-                res.statusCode = err.status || 500;
-                res.setHeader("Content-Type", "application/json; charset=utf-8");
-                res.end(JSON.stringify({
-                    error: err.message || "Internal Server Error",
-                    status: res.statusCode
-                }));
-            }
-            throw err;
+            handleError(err, res);
         }
     });
     server.listen(port, callback);

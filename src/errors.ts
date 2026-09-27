@@ -1,6 +1,6 @@
-import type { Context, Next } from "./types";
+import type { Context, Next,Err } from "./types";
 
-export async function defaultOnErrorHandler(ctx: Context, err: Error) {
+export async function defaultOnErrorHandler(ctx: Context, err: Err) {
     ctx.send(
         {
             error: err.expose ? err.message : "Internal Server Error",
